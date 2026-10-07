@@ -1,0 +1,10 @@
+{
+  "host": "127.0.0.1",
+  "port": 8318,
+  "catalogTtlMs": 300000,
+  "officialModels": { "enabled": false },
+  "providerFiles": [
+    "providers/openai-subscription.json",
+    "providers/cpa.json"
+  ]
+}

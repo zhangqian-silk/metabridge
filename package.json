@@ -1,0 +1,23 @@
+{
+  "name": "codex-metabridge",
+  "version": "0.2.0",
+  "description": "本机多后端聚合代理：把多个 bridge/gateway 后端合并成单个 OpenAI 兼容 provider，供 Codex 使用",
+  "main": "server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "sharp": "0.35.5"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/zhangqian-silk/metabridge.git"
+  },
+  "private": true
+}

@@ -1,0 +1,18 @@
+{
+  "name": "gateway",
+  "via": "direct",
+  "base_url": "https://gateway.example.com/v1",
+  "wire_api": "responses",
+  "prefix": "gateway/",
+  "displayPrefix": "gateway",
+  "protocol": "responses",
+  "requestMode": "passthrough",
+  "compaction": { "mode": "passthrough" },
+  "auth": { "type": "static", "key": "" },
+  "catalog": { "source": "remote" },
+  "passthroughHeaders": false,
+  "http_headers": {},
+  "reasoning": "full",
+  "priority": 50,
+  "enabled": false
+}

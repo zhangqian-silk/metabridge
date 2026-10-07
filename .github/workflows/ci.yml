@@ -1,0 +1,64 @@
+name: Offline checks
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: Node tests and release audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: node scripts/check-release-files.js
+
+  quota-plugin:
+    name: CPA account quota plugin
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integrations/cpa-account-quota
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+          cache: false
+      - run: go test -race ./...
+      - run: go build -buildmode=c-shared -o "$RUNNER_TEMP/factory-quota.so" .
+
+  quota-ui:
+    name: CPA quota UI overlay
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --global bun@1.3.14
+      - name: Prepare pinned upstream management UI
+        run: |
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/router-for-me/Cli-Proxy-API-Management-Center.git \
+            "$RUNNER_TEMP/management-ui"
+          git -C "$RUNNER_TEMP/management-ui" checkout --detach \
+            ee79a794526a30c03748a8864a9ac6589a31833b
+          node scripts/prepare-factory-quota-ui.js "$RUNNER_TEMP/management-ui"
+      - name: Verify maintained quota overlay
+        # Full upstream suite has a documented baseline failure; do not alter it.
+        run: |
+          cd "$RUNNER_TEMP/management-ui"
+          bun install --frozen-lockfile
+          bun test tests/factoryQuota.test.ts tests/commandQuota.test.ts
+          bun run lint
+          bun run build

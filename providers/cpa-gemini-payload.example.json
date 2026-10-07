@@ -1,0 +1,15 @@
+{
+  "override": [
+    {
+      "models": [{ "name": "google/gemini-3.8-flash", "protocol": "openai" }],
+      "params": {
+        "tools.#(function.name==\"image_gen__imagegen\")#.function.parameters.properties.referenced_image_paths": {
+          "anyOf": [
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  ]
+}

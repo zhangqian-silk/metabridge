@@ -1,0 +1,49 @@
+import { beforeAll, describe, expect, test } from 'bun:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import i18n from '../src/i18n';
+import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '../src/features/quota/types';
+import { FactoryQuotaBody } from '../src/features/quota/FactoryQuotaBody';
+import { normalizeFactoryQuota } from '../src/features/quota/factoryQuota';
+
+beforeAll(async () => { await i18n.changeLanguage('en'); });
+
+describe('Factory quota normalization', () => {
+  test('preserves exhausted quota, zero balance, unknown resets and missing windows', () => {
+    const result = normalizeFactoryQuota({ groups: [
+      { displayName: 'Standard', buckets: [{ window: '5h', remainingFraction: 0 }] },
+    ], summary: [{ key: 'extra_usage_balance', value: 0, currency: 'USD' }] });
+    expect(result.groups[0].buckets[0].remainingFraction).toBe(0);
+    expect(result.groups[0].buckets[0].resetTime).toBeUndefined();
+    expect(result.groups[0].buckets).toHaveLength(1);
+    expect(result.summary[0].value).toBe(0);
+  });
+  test('does not interpret unknown, malformed or duplicate values as quota', () => {
+    for (const buckets of [
+      [{ window: '5h', remainingFraction: null }],
+      [{ window: '5h', remainingFraction: -1 }],
+      [{ window: '5h', remainingFraction: 1.1 }],
+      [{ window: '5h', remainingFraction: 0.3, resetTime: 'invalid' }],
+      [{ window: '5h', remainingFraction: 0 }, { window: '5h', remainingFraction: 1 }],
+    ]) {
+      expect(() => normalizeFactoryQuota({ groups: [{ displayName: 'Standard', buckets }] })).toThrow();
+    }
+    expect(() => normalizeFactoryQuota({ groups: [] })).toThrow();
+  });
+  test('renders known zero separately from unknown, and does not invent reset times', () => {
+    const quota = normalizeFactoryQuota({ groups: [
+      { displayName: 'Standard', buckets: [{ window: '5h', remainingFraction: 0 }] },
+    ], summary: [{ key: 'extra_usage_balance', value: 0, currency: 'USD' }], extraUsageAllowed: false });
+    const html = renderToStaticMarkup(createElement(FactoryQuotaBody, {
+      quota, classes: bindQuotaClasses(Object.fromEntries(QUOTA_CLASS_KEYS.map(key => [key, key])), 'test'),
+      styles: { groups: 'groups', group: 'group', window: 'window', row: 'row', note: 'note' },
+    }));
+    expect(html).toContain('0% remaining');
+    expect(html).toContain('Unknown');
+    expect(html).toContain('Reset time unknown');
+    expect(html).toContain('$0.00');
+    expect(html).toContain('not subscription credits');
+    expect(html).toContain('Extra usage disabled');
+    expect(html).not.toContain('Unlimited');
+  });
+});

@@ -1,0 +1,54 @@
+{
+  "zh-CN": {
+    "title": "Command Code 账号额度",
+    "account_note": "读取 CPA 中当前唯一的 Command Code key · 所有 cmd 模型共享账号额度。",
+    "error": "额度暂不可用，请检查 CPA 中的 Command Code 配置。查询失败不表示余额为零；多个 key 不会自动选取。",
+    "balance": "总剩余余额：{{value}}",
+    "monthlyCredits": "订阅余额：{{value}}",
+    "purchasedCredits": "购买余额：{{value}}",
+    "freeCredits": "免费余额：{{value}}",
+    "used_cap": "已用 {{used}} / 上限 {{cap}}",
+    "period_end": "订阅周期结束：{{time}}",
+    "period_unknown": "订阅周期结束时间未知",
+    "source": "来源：Command Code billing 接口。周期结束不是购买余额到期或滚动窗口重置时间。"
+  },
+  "zh-TW": {
+    "title": "Command Code 帳號額度",
+    "account_note": "讀取 CPA 中目前唯一的 Command Code key · 所有 cmd 模型共用帳號額度。",
+    "error": "額度暫不可用，請檢查 CPA 中的 Command Code 設定。查詢失敗不表示餘額為零；多個 key 不會自動選取。",
+    "balance": "總剩餘餘額：{{value}}",
+    "monthlyCredits": "訂閱餘額：{{value}}",
+    "purchasedCredits": "購買餘額：{{value}}",
+    "freeCredits": "免費餘額：{{value}}",
+    "used_cap": "已用 {{used}} / 上限 {{cap}}",
+    "period_end": "訂閱週期結束：{{time}}",
+    "period_unknown": "訂閱週期結束時間未知",
+    "source": "來源：Command Code billing 介面。週期結束不是購買餘額到期或滾動視窗重設時間。"
+  },
+  "en": {
+    "title": "Command Code account quota",
+    "account_note": "Uses the single Command Code key configured in CPA. All cmd models share this account quota.",
+    "error": "Quota unavailable. Check the Command Code configuration in CPA. Failure does not mean zero balance; multiple keys are not selected automatically.",
+    "balance": "Total remaining balance: {{value}}",
+    "monthlyCredits": "Subscription balance: {{value}}",
+    "purchasedCredits": "Purchased balance: {{value}}",
+    "freeCredits": "Free balance: {{value}}",
+    "used_cap": "Used {{used}} / cap {{cap}}",
+    "period_end": "Subscription period ends: {{time}}",
+    "period_unknown": "Subscription period end unknown",
+    "source": "Source: Command Code billing API. Period end is not purchased-credit expiry or a rolling-window reset."
+  },
+  "ru": {
+    "title": "Квота аккаунта Command Code",
+    "account_note": "Используется единственный ключ Command Code в CPA. Общая квота для всех моделей cmd.",
+    "error": "Квота недоступна. Проверьте настройки Command Code в CPA. Ошибка не означает нулевой баланс; несколько ключей не выбираются автоматически.",
+    "balance": "Общий остаток: {{value}}",
+    "monthlyCredits": "Остаток подписки: {{value}}",
+    "purchasedCredits": "Купленный остаток: {{value}}",
+    "freeCredits": "Бесплатный остаток: {{value}}",
+    "used_cap": "Использовано {{used}} / лимит {{cap}}",
+    "period_end": "Конец периода подписки: {{time}}",
+    "period_unknown": "Конец периода подписки неизвестен",
+    "source": "Источник: billing API Command Code. Конец периода не означает истечение купленных кредитов или сброс скользящего окна."
+  }
+}

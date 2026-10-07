@@ -1,0 +1,16 @@
+{
+  "name": "openai-subscription",
+  "via": "direct",
+  "base_url": "https://chatgpt.com/backend-api/codex",
+  "wire_api": "responses",
+  "prefix": "",
+  "displayPrefix": "OpenAI",
+  "protocol": "codex-subscription",
+  "requestMode": "passthrough",
+  "compaction": { "mode": "passthrough" },
+  "auth": { "type": "none" },
+  "catalog": { "source": "codex" },
+  "reasoning": "full",
+  "priority": 10,
+  "enabled": true
+}

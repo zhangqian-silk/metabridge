@@ -1,0 +1,11 @@
+{
+  "port": 8318,
+  "host": "127.0.0.1",
+  "catalogTtlMs": 300000,
+  "logLevel": "info",
+  "compactionStripImages": false,
+  "providerFiles": [
+    "providers/openai-subscription.json",
+    "providers/command-code.json"
+  ]
+}

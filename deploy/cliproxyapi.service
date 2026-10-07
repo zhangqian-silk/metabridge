@@ -1,0 +1,16 @@
+[Unit]
+Description=CLIProxyAPI (third-party upstreams for metabridge)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/cliproxyapi/v8.0.12/cli-proxy-api -local-model -config %h/.config/cliproxyapi/config.json
+WorkingDirectory=%h/.config/cliproxyapi
+EnvironmentFile=-%h/.config/cliproxyapi/proxy.env
+Restart=on-failure
+RestartSec=3
+UMask=0077
+
+[Install]
+WantedBy=default.target

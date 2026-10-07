@@ -1,0 +1,40 @@
+import { beforeAll, expect, test } from 'bun:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import i18n from '../src/i18n';
+import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '../src/features/quota/types';
+import { normalizeCommandQuota } from '../src/features/quota/commandQuota';
+import { CommandQuotaBody } from '../src/features/quota/CommandQuotaBody';
+
+beforeAll(async () => { await i18n.changeLanguage('en'); });
+
+test('Command Code preserves exhausted pools and unknown windows without inventing resets', () => {
+  const quota = normalizeCommandQuota({
+    windows: [{ window: '5h', used: 14, cap: 14, remainingFraction: 0 }],
+    credits: { monthlyCredits: 0, purchasedCredits: 0, freeCredits: 0 }, balance: 0,
+  });
+  const html = renderToStaticMarkup(createElement(CommandQuotaBody, {
+    quota, classes: bindQuotaClasses(Object.fromEntries(QUOTA_CLASS_KEYS.map(k => [k, k])), 'test'),
+  }));
+  expect(html).toContain('0% remaining');
+  expect(html).toContain('Unknown');
+  expect(html).toContain('Reset time unknown');
+  expect(html).toContain('$0.00');
+  expect(html).toContain('Used 14 / cap 14');
+  expect(html).not.toContain('Unlimited');
+});
+
+test('Command Code rejects malformed data and ambiguous totals', () => {
+  for (const value of [
+    { windows: [], credits: {} },
+    { windows: [], credits: { monthlyCredits: -1 } },
+    { windows: [], credits: { monthlyCredits: 2 }, balance: 2 },
+    { windows: [], credits: { monthlyCredits: 2 }, periodEnd: 'invalid' },
+    { windows: [{ window: '5h', used: 1, cap: 0, remainingFraction: 1 }], credits: {} },
+    { windows: [{ window: '5h', used: 1, cap: 2, remainingFraction: 2 }], credits: {} },
+  ]) expect(() => normalizeCommandQuota(value)).toThrow();
+  const quota = normalizeCommandQuota({ windows: [], credits: { monthlyCredits: 2 } });
+  expect(quota.balance).toBeUndefined();
+  expect(quota.periodEnd).toBeUndefined();
+  expect(quota.credits.purchasedCredits).toBeUndefined();
+});

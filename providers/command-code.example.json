@@ -1,0 +1,28 @@
+{
+  "name": "command-code",
+  "base_url": "https://api.commandcode.ai/provider/v1",
+  "wire_api": "responses",
+  "prefix": "cmd/",
+  "displayPrefix": "cmd",
+  "protocol": "command-code",
+  "auth": { "type": "keyfile", "file": "../command-code-api-key" },
+  "priority": 45,
+  "enabled": false,
+  "reasoning": "command-code",
+  "messagesModels": [{ "regex": "^(anthropic/)?claude-", "flags": "i" }],
+  "modelFilter": {
+    "allow": [
+      "zai-org/GLM-5.3",
+      "z-ai/glm-5.3-flash",
+      "deepseek/deepseek-v4.1-flash",
+      "google/gemini-3.8-flash"
+    ],
+    "deny": []
+  },
+  "reasoningRules": [
+    { "match": "zai-org/GLM-5.3", "levels": ["low", "high", "max"], "default": "high" },
+    { "match": "z-ai/glm-5.3-flash", "levels": ["low", "high", "max"], "default": "high" },
+    { "match": "deepseek/deepseek-v4.1-flash", "levels": ["low", "high", "max"], "default": "high" },
+    { "match": "google/gemini-3.8-flash", "levels": ["low", "medium", "high"], "default": "medium" }
+  ]
+}

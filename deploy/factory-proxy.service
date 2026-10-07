@@ -1,0 +1,17 @@
+[Unit]
+Description=Factory native HTTP compatibility layer for CLIProxyAPI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/project/codex-metabridge
+ExecStart=%h/.nvm/versions/node/v24.20.0/bin/node %h/project/codex-metabridge/scripts/start-factory-proxy.js --config %h/.config/cliproxyapi/quota/factory.json
+EnvironmentFile=-%h/.config/cliproxyapi/proxy.env
+Environment=NODE_USE_ENV_PROXY=1
+Restart=on-failure
+RestartSec=3
+UMask=0077
+
+[Install]
+WantedBy=default.target

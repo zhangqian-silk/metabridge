@@ -1,0 +1,37 @@
+{
+  "api-keys": {
+    "codex": [{
+      "name": "factory-openai",
+      "prefix": "factory",
+      "base-url": "http://127.0.0.1:8319/v1",
+      "request-retry": 0,
+      "headers": {},
+      "keys": [{ "api-key": "REPLACE_WITH_FACTORY_KEY", "disable-codex-cloaking": true, "websockets": false }],
+      "models": [{ "name": "gpt-6.1-sol", "alias": "gpt-6.1-sol",
+        "display-name": "factory · GPT-6.1 Sol", "thinking": { "levels": ["low", "medium", "high", "xhigh", "max"] } }]
+    }],
+    "claude": [{
+      "name": "factory-anthropic",
+      "prefix": "factory",
+      "base-url": "http://127.0.0.1:8319",
+      "request-retry": 0,
+      "headers": {
+        "Authorization": "Bearer REPLACE_WITH_FACTORY_KEY"
+      },
+      "keys": [{ "api-key": "REPLACE_WITH_FACTORY_KEY", "cloak": { "mode": "never" } }],
+      "models": [{ "name": "claude-sonnet-5-5", "alias": "claude-sonnet-5-5",
+        "display-name": "factory · Claude Sonnet 5.5" },
+        { "name": "claude-haiku-4-5-20251001", "alias": "claude-haiku-4-5-20251001",
+          "display-name": "factory · Claude Haiku 4.5" }]
+    }],
+    "openai-compatibility": [{
+      "name": "factory-core",
+      "prefix": "factory",
+      "base-url": "http://127.0.0.1:8319/v1",
+      "request-retry": 0,
+      "headers": {},
+      "keys": [{ "api-key": "REPLACE_WITH_FACTORY_KEY" }],
+      "models": [{ "name": "glm-5.3", "alias": "glm-5.3", "display-name": "factory · GLM-5.3" }]
+    }]
+  }
+}

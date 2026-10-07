@@ -1,0 +1,22 @@
+{
+  "name": "cpa",
+  "via": "cpa",
+  "base_url": "http://127.0.0.1:8317/v1",
+  "wire_api": "responses",
+  "protocol": "responses",
+  "requestMode": "passthrough",
+  "compaction": {
+    "mode": "local",
+    "models": [
+      { "regex": "^factory/claude-" },
+      { "regex": "^fusecode/claude-" }
+    ],
+    "stripImages": true
+  },
+  "prefix": "",
+  "displayPrefix": "",
+  "auth": { "type": "keyfile", "file": "../cpa-api-key" },
+  "passthroughHeaders": false,
+  "priority": 45,
+  "catalog": { "source": "remote", "format": "codex", "clientVersion": "0.159.2" }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "third-party-local-compaction",
+  "via": "direct",
+  "base_url": "https://provider.example.com/v1",
+  "wire_api": "responses",
+  "protocol": "responses",
+  "requestMode": "passthrough",
+  "compaction": { "mode": "local", "stripImages": true },
+  "prefix": "ext/",
+  "displayPrefix": "ext",
+  "auth": { "type": "keyfile", "file": "../provider-api-key" },
+  "catalog": { "source": "remote" },
+  "priority": 50,
+  "enabled": false
+}

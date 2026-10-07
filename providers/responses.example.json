@@ -1,0 +1,19 @@
+{
+  "name": "third-party",
+  "via": "direct",
+  "base_url": "https://provider.example.com/v1",
+  "wire_api": "responses",
+  "prefix": "ext/",
+  "displayPrefix": "ext",
+  "protocol": "responses",
+  "requestMode": "passthrough",
+  "compaction": { "mode": "passthrough" },
+  "auth": { "type": "keyfile", "file": "../provider-api-key" },
+  "catalog": { "source": "remote" },
+  "reasoning": "none",
+  "priority": 50,
+  "modelFilter": {
+    "deny": [{ "regex": "(preview|experimental)$", "flags": "i" }]
+  },
+  "enabled": false
+}

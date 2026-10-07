@@ -1,0 +1,19 @@
+{
+  "name": "openai-subscription",
+  "via": "direct",
+  "base_url": "https://chatgpt.com/backend-api/codex",
+  "wire_api": "responses",
+  "protocol": "codex-subscription",
+  "requestMode": "passthrough",
+  "compaction": { "mode": "passthrough" },
+  "prefix": "",
+  "displayPrefix": "",
+  "routeModels": [
+    { "regex": "^gpt-(?!oss(?:-|$))" },
+    { "regex": "^o[1-9](?:-|$)" },
+    "codex-auto-review"
+  ],
+  "auth": { "type": "none" },
+  "catalog": { "source": "codex" },
+  "priority": 10
+}

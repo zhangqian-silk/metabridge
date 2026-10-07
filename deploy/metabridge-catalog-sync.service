@@ -1,0 +1,9 @@
+[Unit]
+Description=Sync metabridge model metadata while preserving local context windows
+After=metabridge.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/project/codex-metabridge/deploy/start.sh %h/project/codex-metabridge/sync-catalog.js %h/.codex/model-catalogs/custom.json http://127.0.0.1:8318/v1/models
+TimeoutStartSec=60
+UMask=0077

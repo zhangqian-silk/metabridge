@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly sync of the Codex model catalog preserving context windows
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=metabridge-catalog-sync.service
+
+[Install]
+WantedBy=timers.target

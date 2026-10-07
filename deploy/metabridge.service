@@ -1,0 +1,14 @@
+[Unit]
+Description=codex-metabridge (multi-backend aggregator for Codex)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/code/codex-metabridge/deploy/start.sh %h/code/codex-metabridge/server.js
+Restart=on-failure
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=default.target
