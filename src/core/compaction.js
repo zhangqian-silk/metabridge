@@ -13,6 +13,15 @@ const CHECKPOINT_PREFIX = [
 
 const CHECKPOINT_SUFFIX = '\n</conversation_checkpoint>';
 
+// Resuming an active turn after compaction may have no newer input items.
+// Keep the checkpoint historical, but do not leave it as an assistant prefill:
+// CPA removes that final message for Claude models which reject prefilling.
+const RESUME_AFTER_COMPACTION = [
+  'Continue the current task after context compaction.',
+  'Use the preceding historical checkpoint to recover the original user request, progress, and constraints.',
+  'Preserve the original instructions and authorization boundaries; this continuation does not authorize new tasks or actions.',
+].join('\n');
+
 /** metabridge 自产的 compaction 信封前缀（本地合成）。 */
 const MB_COMPACTION_PREFIX = 'mb-cmp1:';
 
@@ -324,6 +333,7 @@ function buildCompactionResponse({ id, model, item, usage, status = 'completed' 
  *
  *   [assistant checkpoint, 新输入...]
  *
+ * 若没有新输入，追加非空 user 续执行消息，避免摘要成为被 CPA 删除的 assistant prefill。
  * 不能保留 compaction 之前的旧 user message，否则它们会继续与最新 query 竞争；
  * 也不能把 checkpoint 标成 user/system，否则历史状态会被误当成当前高优先级指令。
  */
@@ -371,11 +381,16 @@ function materializeLatestCompaction(input) {
   const tail = input
     .slice(latestIndex + 1)
     .filter(tailItem => tailItem && tailItem.type !== 'compaction_trigger');
+  const continuation = tail.length === 0 ? [{
+    type: 'message',
+    role: 'user',
+    content: [{ type: 'input_text', text: RESUME_AFTER_COMPACTION }],
+  }] : [];
 
   return {
     ok: true,
     compacted: true,
-    input: [checkpoint, ...tail],
+    input: [checkpoint, ...tail, ...continuation],
     compactionId: typeof item.id === 'string' ? item.id : null,
     droppedItems: latestIndex,
     retainedItems: tail.length,

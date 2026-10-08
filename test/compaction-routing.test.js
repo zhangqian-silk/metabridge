@@ -276,6 +276,32 @@ test(`CPA passthrough synthesizes ${model} compaction and replays its checkpoint
 });
 }
 
+test('CPA Opus checkpoint-only replay keeps historical context before a nonempty user turn', async t => {
+  const model = 'factory/claude-opus-5-5';
+  const upstream = await startBackend(t, model, (res, body) =>
+    jsonResponse(res, completedResponse(body.model, [assistantMessage('continued')])));
+  const bridge = await startBridge(t, [{
+    ...gatewayBackend(upstream.port), name: 'cpa', requestMode: 'passthrough',
+    compaction: { mode: 'local', models: [model] },
+  }]);
+  const response = await bridge.post({
+    model,
+    input: [
+      userMessage('old request'),
+      { type: 'compaction', id: 'cmp_opus', encrypted_content: encodeMbCmp1('Task in progress; keep original constraints') },
+    ],
+  });
+  assert.equal(response.status, 200, bridge.logs());
+  await response.text();
+  const replayed = upstream.requests[0].input;
+  assert.equal(replayed.length, 2);
+  assert.equal(replayed[0].role, 'assistant');
+  assert.match(replayed[0].content[0].text, /Task in progress/);
+  assert.equal(replayed[1].role, 'user');
+  assert.ok(replayed[1].content[0].text.trim().length > 0);
+  assert.doesNotMatch(JSON.stringify(replayed), /old request/);
+});
+
 test('CPA local compaction never emits a checkpoint when upstream summary fails', async t => {
   const upstream = await startBackend(t, 'factory/claude-test', res =>
     jsonResponse(res, { error: { message: 'upstream rejected' } }, 413));
