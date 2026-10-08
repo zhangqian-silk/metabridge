@@ -7,6 +7,7 @@ const {
   CHECKPOINT_PREFIX,
   CHECKPOINT_SUFFIX,
   decodeSrCmp1,
+  encodeMbCmp1,
   hasCompactionTrigger,
   materializeLatestCompaction,
 } = require('../src/core/compaction');
@@ -122,6 +123,31 @@ test('Prefixed backend replay uses the latest compaction and removes replay-only
   assert.match(result.input[0].content[0].text, /new checkpoint/);
   assert.doesNotMatch(result.input[0].content[0].text, /old checkpoint/);
   assert.deepEqual(result.input[1], userMessage('current'));
+});
+
+test('checkpoint-only replay preserves the summary and adds a nonempty continuation turn', () => {
+  for (const encode of [encodeMbCmp1, encodeSummary]) {
+    for (const trailing of [[], [null, { type: 'compaction_trigger' }]]) {
+      const input = [
+        userMessage('stale request'),
+        { type: 'compaction', id: 'cmp_only', encrypted_content: encode('Current task and constraints') },
+        ...trailing,
+      ];
+      const snapshot = structuredClone(input);
+      const result = materializeLatestCompaction(input);
+
+      assert.equal(result.ok, true);
+      assert.equal(result.input.length, 2);
+      assert.equal(result.input[0].role, 'assistant');
+      assert.match(result.input[0].content[0].text, /Current task and constraints/);
+      assert.equal(result.input[1].role, 'user');
+      assert.equal(result.input[1].content[0].type, 'input_text');
+      assert.ok(result.input[1].content[0].text.trim().length > 0);
+      assert.doesNotMatch(JSON.stringify(result.input), /stale request/);
+      assert.equal(result.retainedItems, 0, 'synthetic continuation is not a retained source item');
+      assert.deepEqual(input, snapshot);
+    }
+  }
 });
 
 test('Prefixed backend replay fails closed for opaque or malformed compaction items', () => {

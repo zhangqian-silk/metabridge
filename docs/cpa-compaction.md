@@ -31,6 +31,11 @@ Only complete, non-truncated summaries become `mb-cmp1` checkpoints. On subseque
 requests for these models, the bridge converts its checkpoint into an assistant
 historical summary and keeps newer messages/tool items. Opaque or malformed
 checkpoints fail explicitly rather than being silently discarded.
+If there are no newer items, the bridge appends a nonempty user continuation
+turn after the historical assistant summary. This keeps CPA from dropping the
+summary as an unsupported trailing assistant prefill on Claude Opus 5.
+The continuation preserves the original task's constraints and authorization;
+the summary is not promoted to a system or user instruction.
 
 Other models and ordinary requests without checkpoints remain passthrough.
 FuseCode Claude uses the same summary/checkpoint adapter: CPA translates the
