@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
-const { createFactoryServer, validateGateway } = require('../factory-proxy');
+const { createFactoryServer, validateGateway } = require('../src/adapters/factory/server');
 const { mergeFactoryProviders } = require('../scripts/configure-factory-cpa');
 const { mergeFactoryModels } = require('../scripts/configure-factory-models');
 const sharp = require('sharp');
@@ -26,7 +26,7 @@ const auth = { Authorization: 'Bearer fixture-private', 'Content-Type': 'applica
 
 test('Factory catalog expansion preserves credential/quota configuration and rejects invalid models', () => {
   const original = config();
-  const models = require('../providers/factory-models.catalog.json');
+  const models = require('../config/catalogs/factory-models.catalog.json');
   const expanded = mergeFactoryModels(original, models);
   assert.deepEqual(expanded.auth, original.auth);
   assert.deepEqual(expanded.quota, original.quota);

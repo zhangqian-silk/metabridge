@@ -7,8 +7,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { readJson, resolveFile, compileModelFilter, providerApiUrl } = require('../provider-config');
-const { commandCodeReasoning } = require('../command-reasoning');
+const { readJson, resolveFile, compileModelFilter, providerApiUrl } = require('../src/core/provider-config');
+const { commandCodeReasoning } = require('../src/adapters/command-code/reasoning');
 const root = process.env.MB_CONFIG_FILE || path.join(os.homedir(), '.metabridge/config.json');
 const cpaDir = process.env.CPA_CONFIG_DIR || path.join(os.homedir(), '.config/cliproxyapi');
 const stage = path.join(path.dirname(root), 'config.hybrid.staged.json');
@@ -101,7 +101,7 @@ async function main() {
     routing: { 'force-model-prefix': true },
     oauth: { 'auth-dir': path.join(cpaDir, 'auth') },
     ...(cmdModels.some(m => m.name === 'google/gemini-3.8-flash')
-      ? { payload: readJson(path.join(__dirname, '../providers/cpa-gemini-payload.example.json')) } : {}),
+      ? { payload: readJson(path.join(__dirname, '../config/providers/cpa-gemini-payload.example.json')) } : {}),
     'api-keys': {
       'openai-compatibility': [{
         name: 'command-code', prefix: 'cmd', 'base-url': apiRoot(cmd.provider),
@@ -116,7 +116,7 @@ async function main() {
   });
   write(path.join(path.dirname(root), 'cpa-api-key'), `${accessKey}\n`);
   proxyEnvironment();
-  const example = name => readJson(path.join(__dirname, '..', 'providers', name));
+  const example = name => readJson(path.join(__dirname, '..', 'config', 'providers', name));
   json(path.join(path.dirname(root), 'providers/cpa.json'), example('cpa.example.json'));
   json(path.join(path.dirname(root), 'providers/openai-subscription.json'),
     example('openai-subscription.hybrid.example.json'));

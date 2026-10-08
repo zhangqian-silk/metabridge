@@ -6,10 +6,10 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const { Readable } = require('node:stream');
 const { pipeline } = require('node:stream/promises');
-const { validateFactoryConfig, readBody } = require('./factory-api');
-const { transformFactoryInstructions } = require('./factory-instructions');
-const { createCPAQuotaReader } = require('./factory-quota-cpa');
-const { optimizeAttachments, attachmentPolicy } = require('./factory-attachments');
+const { validateFactoryConfig, readBody } = require('./api');
+const { transformFactoryInstructions } = require('./instructions');
+const { createCPAQuotaReader } = require('./quota');
+const { optimizeAttachments, attachmentPolicy } = require('./attachments');
 const ORIGIN = 'https://api.factory.ai';
 const ROUTES = {
   '/v1/responses': { protocol: 'responses', path: '/api/llm/o/v1/responses' },

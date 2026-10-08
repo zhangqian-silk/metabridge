@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { randomUUID } = require('node:crypto');
-const { readJson, loadProviders } = require('../provider-config');
+const { readJson, loadProviders } = require('../src/core/provider-config');
 
 function writePrivate(file, value) {
   const temporary = `${file}.${randomUUID()}.tmp`;

@@ -3,8 +3,8 @@
 // Factory's documented Public API is a management API, not a model inference provider.
 // Keep this read-only integration separate from the Codex/CPA request path.
 const fs = require('node:fs');
-const { readJson, resolveFile } = require('./provider-config');
-const { validateInstructionMode } = require('./factory-instructions');
+const { readJson, resolveFile } = require('../../core/provider-config');
+const { validateInstructionMode } = require('./instructions');
 const ORIGIN = 'https://api.factory.ai';
 const DAY = 86400000;
 const amount = value => Number.isFinite(value) && value >= 0;

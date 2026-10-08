@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { decodeCompactionEnvelope } = require('../compaction');
+const { decodeCompactionEnvelope } = require('../src/core/compaction');
 
 async function post(body) {
   const response = await fetch('http://127.0.0.1:8318/v1/responses', {

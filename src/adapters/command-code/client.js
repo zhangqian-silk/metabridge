@@ -4,9 +4,9 @@
 // native Responses backends: Claude uses Messages, everything else uses Chat.
 // Provider model selection and reasoning profiles live in JSON, not this adapter.
 const { randomUUID, createHash } = require('node:crypto');
-const { commandCodeEffort } = require('./command-reasoning');
-const { compileMatcher, providerApiUrl } = require('./provider-config');
-const defaults = require('./providers/command-code.example.json');
+const { commandCodeEffort } = require('./reasoning');
+const { compileMatcher, providerApiUrl } = require('../../core/provider-config');
+const defaults = require('./defaults.json');
 const id = prefix => `${prefix}_${randomUUID().replaceAll('-', '')}`;
 
 function invalid(message) {

@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { queryFactoryQuota, validateFactoryConfig, analyticsRange, loadFactoryConfig } = require('../factory-api');
+const { queryFactoryQuota, validateFactoryConfig, analyticsRange, loadFactoryConfig } = require('../src/adapters/factory/api');
 
 const config = () => ({
   name: 'factory',

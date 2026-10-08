@@ -9,7 +9,7 @@ const path = require('node:path');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
-const { readJson, loadProviders } = require('../provider-config');
+const { readJson, loadProviders } = require('../src/core/provider-config');
 
 async function main() {
   const configFile = path.resolve(process.argv[2] || process.env.MB_CONFIG_FILE ||

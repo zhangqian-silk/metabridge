@@ -2,10 +2,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { once } = require('node:events');
-const { toCPAQuota } = require('../factory-quota-cpa');
-const { createCPAQuotaReader } = require('../factory-quota-cpa');
-const { createFactoryServer } = require('../factory-proxy');
-const { mergeQuotaPlugin } = require('../scripts/install-factory-quota');
+const { toCPAQuota } = require('../src/adapters/factory/quota');
+const { createCPAQuotaReader } = require('../src/adapters/factory/quota');
+const { createFactoryServer } = require('../src/adapters/factory/server');
+const { mergeQuotaPlugin } = require('../integrations/cpa/scripts/install-account-quota');
 
 test('Quota installation only adds its plugin and protects the custom management asset', () => {
   const original = { 'api-keys': { codex: [{ name: 'gateway' }] },

@@ -2,8 +2,8 @@
 'use strict';
 const os = require('node:os');
 const path = require('node:path');
-const { loadFactoryConfig } = require('../factory-api');
-const { createFactoryServer } = require('../factory-proxy');
+const { loadFactoryConfig } = require('../src/adapters/factory/api');
+const { createFactoryServer } = require('../src/adapters/factory/server');
 async function main() {
   const i = process.argv.indexOf('--config');
   const filename = i === -1 ? path.join(os.homedir(), '.config/cliproxyapi/quota/factory.json') : process.argv[i + 1];

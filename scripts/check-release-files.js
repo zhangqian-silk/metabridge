@@ -11,7 +11,7 @@ function forbiddenPath(filename) {
       !name.endsWith('/.env.example') && name !== '.env.example') ||
     /(?:-api-key|\.pem|\.key|\.so|\.dylib|\.dll|\.log|\.tar(?:\.gz)?)$/.test(name) ||
     /\.(?:backup|quota-backup|before)-/.test(name) ||
-    (/^providers\/.*\.json$/.test(name) && !/\.(?:example|catalog)\.json$/.test(name));
+    (/^(?:providers|config)\/.*\.json$/.test(name) && !/\.(?:example|catalog)\.json$/.test(name));
 }
 
 function containsCredential(text) {

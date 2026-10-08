@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — 项目分层
+
+- 源码按 `src/bridge`、`src/core`、`src/adapters` 与 `src/catalog` 归属整理。
+- 部署模板集中到 `config/`，运行时默认规则不再导入部署示例。
+- CPA 插件、管理页 overlay 及构建安装脚本集中到 `integrations/cpa/`。
+- 根目录服务/目录同步入口、旧外挂命令入口及私有运行配置路径保持兼容。
+- 新增模块依赖边界回归测试，同步更新 CI、发布审计和分层文档。
+
 ## Unreleased — Provider 策略分离
 
 - `via` 明确原生直连或 CPA 接入，不再按 provider 名称猜测链路。
@@ -25,9 +33,9 @@
 
 ### CPA 插件与管理页
 
-- `integrations/cpa-account-quota` 提供只读 Factory / Command Code 账号额度插件。
+- `integrations/cpa/account-quota` 提供只读 Factory / Command Code 账号额度插件。
 - 保留旧 `factory-quota` 插件 ID、动态库文件名和接口路径以兼容现有部署。
-- `integrations/cpa-quota-ui` 为固定 commit 的管理页提供额度卡片 overlay。
+- `integrations/cpa/quota-ui` 为固定 commit 的管理页提供额度卡片 overlay。
 - Command Code 展示窗口用量、余额池和订阅周期；未知值不伪造为零。
 - 管理接口受 CPA 鉴权保护，第三方凭据不下发到浏览器，插件不改模型路由。
 

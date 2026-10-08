@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { commandSearchFetch, collectResponse, prepareSearch } = require('../web-search');
+const { commandSearchFetch, collectResponse, prepareSearch } = require('../src/adapters/command-code/search');
 
 const backend = { base: 'https://cmd.test/provider' };
 const search = { base: 'https://gateway.test', model: 'gpt-5.6-sol',
@@ -96,7 +96,7 @@ test('route search only to Sol, preserve auth boundaries, stream real search res
   assert.ok(result.output.some(i => i.type === 'message' && i.content.some(p => p.annotations?.some(a => a.url.includes('nodejs.org')))));
   assert.equal(result.output.at(-1).content[0].text, 'See the Node.js docs.');
   // Replay doesn't leak synthetic tool calls or reject native web_search metadata.
-  const { commandRequest } = require('../command-code');
+  const { commandRequest } = require('../src/adapters/command-code/client');
   const replay = commandRequest({ ...payload, input: [...result.output, { role: 'user', content: 'continue' }] });
   assert.ok(JSON.stringify(replay.body.messages).includes('Use fs.readFile'));
 });

@@ -3,7 +3,7 @@
 
 const os = require('node:os');
 const path = require('node:path');
-const { loadFactoryConfig, queryFactoryQuota } = require('../factory-api');
+const { loadFactoryConfig, queryFactoryQuota } = require('../src/adapters/factory/api');
 
 async function main() {
   const args = process.argv.slice(2);

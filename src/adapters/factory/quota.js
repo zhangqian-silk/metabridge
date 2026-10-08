@@ -1,5 +1,5 @@
 'use strict';
-const { queryFactoryQuota } = require('./factory-api');
+const { queryFactoryQuota } = require('./api');
 const WINDOWS = { fiveHour: '5h', weekly: 'weekly', monthly: 'monthly' };
 
 function toCPAQuota(result) {

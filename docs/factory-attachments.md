@@ -1,6 +1,6 @@
 # Factory attachment transport
 
-Factory image optimization runs in `factory-proxy.js`, after CPA's native protocol
+Factory image optimization runs in `src/adapters/factory/server.js`, after CPA's native protocol
 conversion and instruction adaptation, immediately before the upstream upload.
 It applies to **all configured Factory models** on Messages, Responses, and Chat
 Completions. It does not change official subscription traffic or other CPA providers.
@@ -60,7 +60,7 @@ Verification:
 
 ```sh
 node --test test/factory-attachments.test.js test/factory-proxy.test.js
-node scripts/verify-factory-attachments.js /absolute/path/to/existing-CPA-error.log
+node scripts/verify-src/adapters/factory/attachments.js /absolute/path/to/existing-CPA-error.log
 ```
 
 Add `--allow-inference` to the second command for one live transport verification

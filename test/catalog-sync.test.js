@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { mergeCatalog, syncCatalog } = require('../sync-catalog');
+const { mergeCatalog, syncCatalog } = require('../src/catalog/sync');
 const catalogFetch = source => async url => Response.json(
   new URL(url).pathname === '/healthz' ? { ok: true, service: 'metabridge' } : source);
 

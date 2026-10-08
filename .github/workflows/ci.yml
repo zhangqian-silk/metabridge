@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: integrations/cpa-account-quota
+        working-directory: integrations/cpa/account-quota
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -53,7 +53,7 @@ jobs:
             "$RUNNER_TEMP/management-ui"
           git -C "$RUNNER_TEMP/management-ui" checkout --detach \
             ee79a794526a30c03748a8864a9ac6589a31833b
-          node scripts/prepare-factory-quota-ui.js "$RUNNER_TEMP/management-ui"
+          node integrations/cpa/scripts/prepare-quota-ui.js "$RUNNER_TEMP/management-ui"
       - name: Verify maintained quota overlay
         # Full upstream suite has a documented baseline failure; do not alter it.
         run: |

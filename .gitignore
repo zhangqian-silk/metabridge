@@ -8,6 +8,9 @@ node_modules/
 providers/*.json
 !providers/*.example.json
 !providers/*.catalog.json
+config/**/*.json
+!config/**/*.example.json
+!config/**/*.catalog.json
 
 # Local credentials, prompt caches, diagnostics and deployment artifacts.
 base_instructions.txt

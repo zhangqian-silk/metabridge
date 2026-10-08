@@ -2,9 +2,9 @@
 'use strict';
 const os = require('node:os');
 const path = require('node:path');
-const { loadFactoryConfig } = require('../factory-api');
-const { probeFactoryGateway } = require('../factory-gateway');
-const { validateInstructionMode } = require('../factory-instructions');
+const { loadFactoryConfig } = require('../src/adapters/factory/api');
+const { probeFactoryGateway } = require('../src/adapters/factory/gateway');
+const { validateInstructionMode } = require('../src/adapters/factory/instructions');
 
 async function main() {
   if (!process.argv.includes('--allow-inference')) {

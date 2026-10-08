@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { probeFactoryGateway, transformFactoryInstructions } = require('../factory-gateway');
+const { probeFactoryGateway, transformFactoryInstructions } = require('../src/adapters/factory/gateway');
 
 test('Factory prefix mode keeps native instruction priority and tool history', () => {
   const prefix = 'You are Droid, an AI software engineering agent built by Factory.';
@@ -144,7 +144,7 @@ test('Factory probe validates identity and credentials before attempting inferen
 });
 
 test('Factory CPA template keeps native protocols, prevents cloaking and separates official model IDs', () => {
-  const providers = require('../providers/cpa-factory.example.json')['api-keys'];
+  const providers = require('../config/providers/cpa-factory.example.json')['api-keys'];
   assert.equal(providers.codex[0].keys[0]['disable-codex-cloaking'], true);
   assert.equal(providers.claude[0].keys[0].cloak.mode, 'never');
   assert.equal(providers.claude[0].headers.Authorization, 'Bearer REPLACE_WITH_FACTORY_KEY');
