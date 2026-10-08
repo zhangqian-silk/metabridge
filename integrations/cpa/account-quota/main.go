@@ -107,7 +107,7 @@ func handleMethod(method string, request []byte) (any, error) {
 		return map[string]any{
 			"schema_version": 6,
 			"metadata": map[string]any{"Name": "Factory and Command Code Account Quota", "Version": "0.2.0",
-				"Author": "metabridge", "GitHubRepository": "local://codex-metabridge/integrations/cpa-account-quota"},
+				"Author": "metabridge", "GitHubRepository": "local://codex-metabridge/integrations/cpa/account-quota"},
 			"capabilities": map[string]bool{"quota_provider": true, "management_api": true},
 		}, nil
 	case "plugin.quiesce", "plugin.shutdown":

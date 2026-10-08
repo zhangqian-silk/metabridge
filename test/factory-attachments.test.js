@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const sharp = require('sharp');
-const { optimizeAttachments, attachmentPolicy } = require('../factory-attachments');
+const { optimizeAttachments, attachmentPolicy } = require('../src/adapters/factory/attachments');
 
 async function image() {
   // Deterministic textured screenshot-like PNG; large enough to reproduce payload pressure.

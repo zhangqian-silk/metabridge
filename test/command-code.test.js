@@ -2,7 +2,7 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { commandRequest, commandFetch } = require('../command-code');
+const { commandRequest, commandFetch } = require('../src/adapters/command-code/client');
 
 test('Command Code selects native endpoint and translates tool history, images and custom tools', () => {
   const payload = {
@@ -305,7 +305,7 @@ test('cancelling converted SSE aborts the upstream request', async () => {
 });
 
 test('custom tools restore long aliases in Responses events', () => {
-  const { buildAliasMap, rewriteRequestPayload, makeRespRewriter } = require('../tool-names');
+  const { buildAliasMap, rewriteRequestPayload, makeRespRewriter } = require('../src/core/tool-names');
   const name = `mcp__long_connector__long_server__${'apply_patch_'.repeat(5)}`;
   const payload = { tools: [{ type: 'custom', name }] };
   const { fwd, rev } = buildAliasMap(payload.tools);

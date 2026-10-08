@@ -3,8 +3,8 @@
 // Explicit, bounded inference verification only. Instruction folding is opt-in.
 // Never impersonate the Droid client, retry a forbidden call, or launch an agent.
 const crypto = require('node:crypto');
-const { readBody } = require('./factory-api');
-const { validateInstructionMode, transformFactoryInstructions } = require('./factory-instructions');
+const { readBody } = require('./api');
+const { validateInstructionMode, transformFactoryInstructions } = require('./instructions');
 const ORIGIN = 'https://api.factory.ai';
 const CASES = [
   { protocol: 'responses', path: '/api/llm/o/v1/responses', provider: 'openai',

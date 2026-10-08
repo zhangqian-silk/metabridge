@@ -13,7 +13,7 @@ const {
   materializeLatestCompaction,
   summaryFromResponsesJson,
   summaryFromSse,
-} = require('../compaction');
+} = require('../src/core/compaction');
 
 function sse(...events) {
   return events.map(e => `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`).join('');

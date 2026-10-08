@@ -9,7 +9,7 @@ const {
   decodeSrCmp1,
   hasCompactionTrigger,
   materializeLatestCompaction,
-} = require('../compaction');
+} = require('../src/core/compaction');
 
 function encodeSummary(summary) {
   const envelope = Buffer.from(

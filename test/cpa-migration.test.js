@@ -57,7 +57,7 @@ test('CPA migration stages file credentials and permitted models without changin
   assert.equal(cmd.prefix, 'cmd');
   assert.deepEqual(cmd.models.map(m => m.name), ['allowed', 'google/gemini-3.8-flash']);
   assert.deepEqual(cmd.models[0].thinking.levels, ['high']);
-  assert.deepEqual(cpa.payload, require('../providers/cpa-gemini-payload.example.json'));
+  assert.deepEqual(cpa.payload, require('../config/providers/cpa-gemini-payload.example.json'));
   assert.equal(cmd.keys[0]['api-key'], secrets.cmd);
   assert.equal(cpa['api-keys'].codex[0].keys[0]['api-key'], secrets.gateway);
   assert.equal((await run()).code, 1, 're-run must not overwrite existing credentials');

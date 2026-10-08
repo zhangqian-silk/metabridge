@@ -8,8 +8,8 @@ const path = require('node:path');
 const {
   isModelAllowed, compileModelFilter, compileMatcher, loadProviders, readJson,
   compileReasoningRules, reasoningForModel,
-} = require('../provider-config');
-const { commandRequest } = require('../command-code');
+} = require('../src/core/provider-config');
+const { commandRequest } = require('../src/adapters/command-code/client');
 
 test('allow rules are a union, deny wins, and exact IDs stay case sensitive', () => {
   const provider = { modelFilter: {

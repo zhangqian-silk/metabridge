@@ -10,7 +10,7 @@ const {
   makeRespRewriter,
   rewriteRequestPayload,
   shortHash,
-} = require('../tool-names');
+} = require('../src/core/tool-names');
 
 const VALID_NAME = /^[A-Za-z0-9_-]{1,64}$/;
 

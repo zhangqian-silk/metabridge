@@ -1,8 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { commandCodeReasoning } = require('../command-reasoning');
-const { commandRequest } = require('../command-code');
+const { commandCodeReasoning } = require('../src/adapters/command-code/reasoning');
+const { commandRequest } = require('../src/adapters/command-code/client');
 
 const models = [
   ['zai-org/GLM-5.3', ['low', 'high', 'max'], 'high'],

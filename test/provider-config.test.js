@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
-const { normalizeProviderPolicy, compileCompaction, compactionForModel, usesLocalCompaction } = require('../provider-config');
+const { normalizeProviderPolicy, compileCompaction, compactionForModel, usesLocalCompaction } = require('../src/core/provider-config');
 
 test('explicit provider chains default to passthrough without inferring adaptations from prefixes', () => {
   for (const via of ['direct', 'cpa']) {
@@ -606,8 +606,8 @@ test('full base_url, wire_api and file-backed Bearer auth work for catalog, infe
 });
 
 test('complete API roots support arbitrary paths and Command Code native endpoints', async () => {
-  const { providerApiUrl } = require('../provider-config');
-  const { commandFetch } = require('../command-code');
+  const { providerApiUrl } = require('../src/core/provider-config');
+  const { commandFetch } = require('../src/adapters/command-code/client');
   assert.equal(providerApiUrl({ base_url: 'https://example.test/api/custom/' }, '/v1/models'),
     'https://example.test/api/custom/models');
   assert.equal(providerApiUrl({ base: 'https://example.test/provider/' }, '/v1/models'),

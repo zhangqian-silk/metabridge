@@ -1,0 +1,10 @@
+{
+  "reasoning": "command-code",
+  "messagesModels": [{ "regex": "^(anthropic/)?claude-", "flags": "i" }],
+  "reasoningRules": [
+    { "match": "zai-org/GLM-5.3", "levels": ["low", "high", "max"], "default": "high" },
+    { "match": "z-ai/glm-5.3-flash", "levels": ["low", "high", "max"], "default": "high" },
+    { "match": "deepseek/deepseek-v4.1-flash", "levels": ["low", "high", "max"], "default": "high" },
+    { "match": "google/gemini-3.8-flash", "levels": ["low", "medium", "high"], "default": "medium" }
+  ]
+}

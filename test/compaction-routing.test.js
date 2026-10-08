@@ -8,7 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 
-const { decodeCompactionEnvelope, encodeMbCmp1 } = require('../compaction');
+const { decodeCompactionEnvelope, encodeMbCmp1 } = require('../src/core/compaction');
 
 function listen(server, port = 0) {
   return new Promise((resolve, reject) => {

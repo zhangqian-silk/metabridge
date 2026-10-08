@@ -4,7 +4,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { validateGateway } = require('../factory-proxy');
+const { validateGateway } = require('../src/adapters/factory/server');
 
 function mergeFactoryModels(config, models) {
   const result = structuredClone(config);
@@ -17,7 +17,7 @@ function main() {
   if (!process.argv.includes('--activate')) throw new Error('explicit --activate required');
   const filename = path.join(os.homedir(), '.config/cliproxyapi/quota/factory.json');
   const current = JSON.parse(fs.readFileSync(filename, 'utf8'));
-  const models = JSON.parse(fs.readFileSync(path.join(__dirname, '../providers/factory-models.catalog.json'), 'utf8'));
+  const models = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/catalogs/factory-models.catalog.json'), 'utf8'));
   const next = mergeFactoryModels(current, models);
   if (JSON.stringify(current) === JSON.stringify(next)) {
     console.log('Factory model configuration unchanged'); return;

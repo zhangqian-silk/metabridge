@@ -2,7 +2,7 @@
 
 支持 provider 原生直连或经 CPA 接入的本地路由与兼容层。
 每个 provider 独立声明链路、请求处理和压缩策略；CPA 插件与管理页扩展是可选外挂。
-当前混合部署示例使用 `config.hybrid.example.json`，历史厂商直连适配器仅供旧配置兼容。
+当前混合部署示例使用 `config/bridge/config.hybrid.example.json`，历史厂商直连适配器仅供旧配置兼容。
 
 ## Provider 链路与处理策略
 
@@ -22,12 +22,12 @@
 
 模板：
 
-- 官方直连：`providers/openai-subscription.hybrid.example.json`
-- 普通 API / gateway 直连透传：`providers/responses.example.json` / `providers/gateway.example.json`
-- 普通 API 直连、本地压缩：`providers/responses-local-compaction.example.json`
-- CPA 接入、按模型本地压缩：`providers/cpa.example.json`
+- 官方直连：`config/providers/openai-subscription.hybrid.example.json`
+- 普通 API / gateway 直连透传：`config/providers/responses.example.json` / `config/providers/gateway.example.json`
+- 普通 API 直连、本地压缩：`config/providers/responses-local-compaction.example.json`
+- CPA 接入、按模型本地压缩：`config/providers/cpa.example.json`
 
-`config.mixed.example.json` 展示官方直连 + gateway 直连 + CPA 兜底同时存在。
+`config/bridge/config.mixed.example.json` 展示官方直连 + gateway 直连 + CPA 兜底同时存在。
 复制对应模板到私有配置目录并填写地址/凭据；gateway 模板默认禁用，确认后再启用。
 若 CPA 也暴露 `gateway/*`，直连 gateway 的前缀路由优先，CPA 同名条目不会重复展示。
 
@@ -38,12 +38,18 @@
 
 | 层 | 仓库位置 | 职责 |
 | --- | --- | --- |
-| bridge 核心 | `server.js`、`provider-config.js`、`codex-subscription.js`、`compaction.js` | 合并模型目录、路由、官方订阅鉴权透传，以及显式配置的本地压缩兼容 |
-| Factory 网关 | `factory-*.js` | 第三方网关请求适配、图像体积优化、Factory 额度查询；不是 CPA 插件或 Droid agent |
-| CPA 账号额度插件 | `integrations/cpa-account-quota/` | Go 动态库，为 Factory / Command Code 注册只读额度及管理接口，不参与推理路由 |
-| CPA 管理页扩展 | `integrations/cpa-quota-ui/` | 对固定版本的管理页源码应用额度卡片 overlay，不是独立 Web 服务 |
-| 配置模板与模型目录 | `config*.example.json`、`providers/*.example.json`、`providers/*.catalog.json` | 无真实凭据的部署示例和模型元数据 |
+| bridge 编排与通用核心 | `src/bridge/`、`src/core/`、`src/catalog/` | 合并模型目录、路由、配置策略，以及显式配置的本地压缩兼容 |
+| 上游适配器 | `src/adapters/openai/`、`command-code/`、`factory/` | 官方订阅鉴权透传、历史协议兼容、Factory 请求及附件适配；不是 CPA 插件或 Droid agent |
+| CPA 账号额度插件 | `integrations/cpa/account-quota/` | Go 动态库，为 Factory / Command Code 注册只读额度及管理接口，不参与推理路由 |
+| CPA 管理页扩展 | `integrations/cpa/quota-ui/` | 对固定版本的管理页源码应用额度卡片 overlay，不是独立 Web 服务 |
+| 配置模板与模型目录 | `config/bridge/`、`config/providers/`、`config/catalogs/` | 无真实凭据的部署示例和模型元数据 |
 | 运维与验证 | `scripts/`、`deploy/`、`test/` | 显式迁移、构建、部署、离线测试和需授权的真实接口验证 |
+
+根目录 `server.js`、`sync-catalog.js` 仅保留兼容入口，不承载实现。
+`src/core/` 不依赖编排或厂商适配器；适配器不反向依赖 bridge；
+推理源码不导入 `integrations/` 或配置示例。这些边界由架构测试检查。
+Command Code 运行时默认规则放在适配器内部，用户文件配置仍可覆盖。
+CPA 安装和页面构建脚本归属 `integrations/cpa/scripts/`，旧脚本路径仅作兼容入口。
 
 配置不会作为插件编译。真实配置、API key、OAuth 文件、日志、编译产物和本机
 指令缓存留在用户目录，不提交到仓库。详细文件归属、构建、发布及回滚见
@@ -57,7 +63,7 @@ CPA 额度页支持 Command Code 的 5 小时/周窗口、订阅/购买/免费�
 
 ### Factory 限额/历史消费查询
 
-新增独立文件配置 `providers/factory-quota.example.json` 和只读查询命令
+新增独立文件配置 `config/providers/factory-quota.example.json` 和只读查询命令
 `node scripts/query-factory-quota.js`，支持组织默认限额、个人覆盖限额和
 当前凭据的历史 Factory Standard Credits 消费。详见 [Factory 接入说明](docs/factory-api.md)。
 `quota.billingLimits` 另支持内部网关的 5 小时/周/月利用率和额外用量余额。
@@ -75,9 +81,9 @@ GLM-5.3 已完成推理验证，其余按用户要求直接配置、不逐个验
 
 ### 官方订阅直连 + CPA 托管第三方（推荐）
 
-使用 `config.hybrid.example.json`，官方 provider 从
-`providers/openai-subscription.hybrid.example.json` 复制，CPA provider 从
-`providers/cpa.example.json` 复制。CPA 的客户端访问密钥放在个人配置引用的
+使用 `config/bridge/config.hybrid.example.json`，官方 provider 从
+`config/providers/openai-subscription.hybrid.example.json` 复制，CPA provider 从
+`config/providers/cpa.example.json` 复制。CPA 的客户端访问密钥放在个人配置引用的
 `cpa-api-key` 文件（权限 0600），不是环境变量，也不是官方 OAuth 凭据。
 
 链路：官方模型 → metabridge → 官方 Codex；其他模型 → metabridge → CPA → 上游。
@@ -128,7 +134,7 @@ CMD 白/黑名单在迁移时筛选为 CPA 的 `models` 配置，推理档位迁
 新增模型需要更新 CPA 配置，不会因上游列表增加而自动开放。
 
 Gemini 的 Codex 图像工具 schema 兼容规则也放在 CPA `payload` 中：
-`providers/cpa-gemini-payload.example.json` 保留工具和 nullable 数组含义，
+`config/providers/cpa-gemini-payload.example.json` 保留工具和 nullable 数组含义，
 只把 `referenced_image_paths` 的数组 `items` 移到 `anyOf` 的数组分支，
 避免 Command Code → Gemini 转换后出现 `any_of` 的非法并列字段。
 不影响官方/Gateway/其他 CMD 模型。`verify-hybrid.js` 是显式执行的真实推理测试，
@@ -158,15 +164,15 @@ Gemini 的 Codex 图像工具 schema 兼容规则也放在 CPA `payload` 中：
 
 ```bash
 mkdir -p ~/.metabridge/providers
-cp config.example.json ~/.metabridge/config.json
-cp providers/openai-subscription.example.json ~/.metabridge/providers/openai-subscription.json
-cp providers/command-code.example.json ~/.metabridge/providers/command-code.json
+cp config/bridge/config.example.json ~/.metabridge/config.json
+cp config/providers/openai-subscription.example.json ~/.metabridge/providers/openai-subscription.json
+cp config/providers/command-code.example.json ~/.metabridge/providers/command-code.json
 chmod 600 ~/.metabridge/config.json ~/.metabridge/providers/*.json
 ```
 
 已有配置时不要直接覆盖。编辑 `~/.metabridge/config.json`，填写自己可访问的后端与凭据。
 默认示例启用订阅直连，Command Code 默认关闭，准备好 key 后才能启用。
-`providers/` 下提供第三方 Responses 和通用网关模板；其中占位地址不是可用服务，
+`config/providers/` 下提供第三方 Responses 和通用网关模板；其中占位地址不是可用服务，
 需要填写自己的服务地址和凭据。
 至少需要一个可用后端。
 
@@ -180,7 +186,7 @@ chmod 600 ~/.metabridge/config.json ~/.metabridge/providers/*.json
 }
 ```
 
-将 `providers/responses.example.json` 复制到上述文件，修改地址、前缀、过滤条件及
+将 `config/providers/responses.example.json` 复制到上述文件，修改地址、前缀、过滤条件及
 `enabled: true`。把密钥单独保存到 `keyfile` 并设置权限 `600`，不要提交到仓库。
 新配置的 `base_url` 是完整 API 根地址，例如 `https://provider.example.com/v1`；
 代理只追加 `/models`、`/responses` 等资源路径，不重复添加 `/v1`。
@@ -230,7 +236,7 @@ remote compaction 路径；这属于客户端兼容配置，不会把第三方�
 ### 接入 Command Code（`cmd/`）
 
 Command Code 从在线 `/provider/v1/models` 拉取目录。复制
-`providers/command-code.example.json` 为 `~/.metabridge/providers/command-code.json`，
+`config/providers/command-code.example.json` 为 `~/.metabridge/providers/command-code.json`，
 将这个路径加入主配置的 `providerFiles`，准备好密钥后启用。文件中的基础连接设置为：
 
 ```json
@@ -466,7 +472,7 @@ bridge 不将 provider JSON 里的 name 当作客户端 `name="OpenAI"` 开关�
 
 ### Gateway（文件凭据）
 
-`providers/gateway.example.json` 按 Responses 网关配置，示例为：
+`config/providers/gateway.example.json` 按 Responses 网关配置，示例为：
 
 ```json
 {

@@ -3,7 +3,7 @@
 // Hosted search belongs to the Responses provider, not the Command Code model.
 // Expose a synthetic function to the main model and execute it in this module.
 const { randomUUID } = require('node:crypto');
-const { commandFetch, readEvents } = require('./command-code');
+const { commandFetch, readEvents } = require('./client');
 const SEARCH_TYPES = new Set(['web_search', 'web_search_preview', 'web_search_preview_2025_03_11']);
 const newId = prefix => `${prefix}_${randomUUID().replaceAll('-', '')}`;
 

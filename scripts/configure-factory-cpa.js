@@ -3,8 +3,8 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { loadFactoryConfig } = require('../factory-api');
-const { validateGateway } = require('../factory-proxy');
+const { loadFactoryConfig } = require('../src/adapters/factory/api');
+const { validateGateway } = require('../src/adapters/factory/server');
 
 function mergeFactoryProviders(cpa, factory, key) {
   const gateway = validateGateway(factory);

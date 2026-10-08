@@ -60,12 +60,12 @@ Analytics 使用 UTC，最多 90 天，最早从 2026-01-14 开始，只能查�
 
 ## 文件配置与使用
 
-`providers/factory-quota.example.json` 是独立查询配置，**不要加入 metabridge 的
+`config/providers/factory-quota.example.json` 是独立查询配置，**不要加入 metabridge 的
 `providerFiles`**，也不要作为 CPA 模型 provider 配置。
 
 ```bash
 mkdir -p ~/.config/cliproxyapi/quota
-cp providers/factory-quota.example.json ~/.config/cliproxyapi/quota/factory.json
+cp config/providers/factory-quota.example.json ~/.config/cliproxyapi/quota/factory.json
 chmod 600 ~/.config/cliproxyapi/quota/factory.json
 # 使用编辑器把 Factory API key 写入同目录的 factory-api-key（不要提交到项目）。
 # 然后 chmod 600 ~/.config/cliproxyapi/quota/factory-api-key
@@ -96,7 +96,7 @@ API key 只发送到固定的官方 HTTPS origin，拒绝重定向。
 模型适配层仍是独立 Node HTTP 服务，不是模型执行插件。
 CPA 使用已有 `codex`、`claude`、`openai-compatibility` provider 连接该服务。
 
-新增 `integrations/cpa-account-quota` Go 动态库插件，使用 CPA ABI 1 / JSON schema 6，
+新增 `integrations/cpa/account-quota` Go 动态库插件，使用 CPA ABI 1 / JSON schema 6，
 只声明 `quota_provider` 和 `management_api`。无模型执行、路由、认证登录能力。
 插件通过标准 `quota.identifier/describe/fetch` 注册 Factory 额度能力，
 可在 `GET /v0/management/quota/providers` 发现；不支持额度重置。
@@ -108,12 +108,12 @@ CPA 使用已有 `codex`、`claude`、`openai-compatibility` provider 连接该�
 
 查询链路：浏览器（仅 CPA management key）→ CPA 插件 → 本机
 `GET http://127.0.0.1:8319/v1/quota`（服务端文件 key）→ Factory billing。
-Go 插件源码统一位于 `integrations/cpa-account-quota`；Factory 查询仅读取固定位置
+Go 插件源码统一位于 `integrations/cpa/account-quota`；Factory 查询仅读取固定位置
 的私有配置/凭据文件，使用无代理的本机 HTTP client，
 拒绝重定向，25 秒超时、1 MiB 响应上限。不采纳浏览器提供的 URL、key 或账号。
 metadata 中的 `local://…` 明确标识本地源码，不冒充已发布的 GitHub 插件。
 
-`factory-quota-cpa.js` 复用 `queryFactoryQuota` / `normalizeBillingLimits`，
+`src/adapters/factory/quota.js` 复用 `queryFactoryQuota` / `normalizeBillingLimits`，
 只查询 billing，不为页面重复查询组织成员/历史 Analytics。成功缓存 30 秒，
 并发请求合并；失败不缓存、不返回旧成功数据。页面首开查询一次，有手动刷新，
 不后台轮询。展示 standard/core 的 5 小时、周、月剩余比例，
@@ -121,9 +121,9 @@ metadata 中的 `local://…` 明确标识本地源码，不冒充已发布的 G
 API key 和组织/用户标识不下发到浏览器，查询失败不填零。
 
 管理页采用官方源码 `ee79a794526a30c03748a8864a9ac6589a31833b` 上的小型 overlay，
-维护在 `integrations/cpa-quota-ui`，复用 Card/Button/QuotaMeter 和现有主题，
+维护在 `integrations/cpa/quota-ui`，复用 Card/Button/QuotaMeter 和现有主题，
 覆盖四种语言、移动端单列、加载/错误/缺失值状态和连接切换隔离。
-`scripts/prepare-factory-quota-ui.js` 只接受此固定版本，升级需重新审查 overlay。
+`integrations/cpa/scripts/prepare-quota-ui.js` 只接受此固定版本，升级需重新审查 overlay。
 部署会创建原配置、插件、management.html 的备份，并关闭管理页自动更新，
 防止官方构建覆盖定制卡片；不改变管理密码、监听地址或任何模型 provider。
 后续管理页升级需手动重建，不应直接开启自动更新而丢失此功能。
@@ -131,18 +131,18 @@ API key 和组织/用户标识不下发到浏览器，查询失败不填零。
 构建/部署示例（在管理页源码 checkout 中使用其锁定的 Bun 版本）：
 
 ```bash
-# 在项目 integrations/cpa-account-quota 目录：
+# 在项目 integrations/cpa/account-quota 目录：
 go test ./...
 go build -buildmode=c-shared -o /absolute/build/factory-quota.so .
 # 回到项目根目录：
-node scripts/prepare-factory-quota-ui.js /absolute/path/to/management-ui
+node integrations/cpa/scripts/prepare-quota-ui.js /absolute/path/to/management-ui
 # 在管理页 checkout：
 bun install --frozen-lockfile
 bun test tests/factoryQuota.test.ts
 bun run lint
 bun run build
 # 回到项目根目录：
-node scripts/install-factory-quota.js --activate \
+node integrations/cpa/scripts/install-account-quota.js --activate \
   --plugin /absolute/build/factory-quota.so \
   --web /absolute/path/to/management-ui/dist/index.html
 systemctl --user restart factory-proxy cliproxyapi
@@ -179,7 +179,7 @@ https://github.com/JaydonZhao/factory2api
 ### 2026-10-04 模型目录扩充
 
 根据 https://docs.factory.ai/models.md 的公开模型 ID，
-`providers/factory-models.catalog.json` 配置了 53 个非 Gemini 模型：
+`config/catalogs/factory-models.catalog.json` 配置了 53 个非 Gemini 模型：
 16 个 Claude、18 个 GPT、3 个 Grok、16 个 Droid Core 模型，包括仍在目录中的
 deprecated 模型。MiniMax 使用 Messages 协议但 `x-api-provider` 为 fireworks，
 参考 pi 的路由实现；其余 Core 使用 Chat。Grok 的 xai 路由、较新 Core 的
@@ -243,13 +243,13 @@ node sync-catalog.js ~/.codex/model-catalogs/custom.json http://127.0.0.1:8318/v
 
 ### 部署与验证
 
-`providers/factory-quota.example.json` 包含完整 gateway 文件配置；
-`providers/cpa-factory.example.json` 是对应的 CPA 片段，不能直接覆盖现有配置。
+`config/providers/factory-quota.example.json` 包含完整 gateway 文件配置；
+`config/providers/cpa-factory.example.json` 是对应的 CPA 片段，不能直接覆盖现有配置。
 部署命令：
 
 ```bash
 # 准备私有 factory.json / factory-api-key 后，先运行原生适配层验证。
-NODE_USE_ENV_PROXY=1 node scripts/start-factory-proxy.js
+NODE_USE_ENV_PROXY=1 node scripts/start-src/adapters/factory/server.js
 # 原生流式验证通过后启用持久服务；按本机 Node 安装修改 unit 的 ExecStart。
 cp deploy/factory-proxy.service ~/.config/systemd/user/
 systemctl --user daemon-reload

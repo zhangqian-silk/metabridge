@@ -1,7 +1,7 @@
 'use strict';
 
-const { reasoningForModel } = require('./provider-config');
-const defaults = require('./providers/command-code.example.json');
+const { reasoningForModel } = require('../../core/provider-config');
+const defaults = require('./defaults.json');
 
 function commandCodeReasoning(model, backend = defaults) {
   // Existing inline configurations keep the historical file-backed profile.

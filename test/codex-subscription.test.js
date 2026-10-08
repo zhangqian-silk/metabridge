@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   BASE, subscriptionFetch, validateSubscriptionBackend, subscriptionHeaders,
-} = require('../codex-subscription');
+} = require('../src/adapters/openai/subscription');
 const backend = { base: BASE, auth: { type: 'none' } };
 const auth = { authorization: 'Bearer fake-oauth-token', 'chatgpt-account-id': 'fake-account' };
 

@@ -50,18 +50,40 @@ CPA 账号额度插件、管理页 overlay 及其安装、升级由独立外挂�
 
 ## 代码边界
 
+```text
+server.js / sync-catalog.js       兼容启动入口
+src/
+  bridge/                        HTTP 服务编排、路由和目录合并
+  core/                          文件配置、通用压缩、工具名兼容
+  adapters/{openai,command-code,factory}/
+                                 各上游协议和能力适配
+  catalog/                       客户端模型目录同步
+config/{bridge,providers,catalogs}/
+                                 部署示例及静态目录，不存真实凭据
+integrations/cpa/
+  account-quota/                 CPA Go 额度插件
+  quota-ui/                      CPA 管理页 overlay
+  scripts/                       外挂安装和 overlay 构建准备
+scripts/ / deploy/ / test/        运维命令、服务单元、回归验证
+```
+
+依赖方向：编排层使用核心与适配器；核心只依赖核心；适配器不导入编排层。
+`src/` 不加载 CPA 外挂或部署示例，运行时默认值由对应源码模块持有。
+`test/architecture.test.js` 检查相对模块依赖及兼容入口，防止目录重新混用。
+本次分层迁移不拆出新进程，不引入插件框架，也不改变请求处理策略。
+
 | 组件 | 位置 | 负责 | 不负责 |
 | --- | --- | --- | --- |
-| bridge | 根目录 `server.js` / `provider-config.js` | 模型目录合并、展示顺序、路由、文件凭据解析 | 第三方账号登录、账号池、额度计费 |
-| 官方订阅转发 | `codex-subscription.js` | 当前客户端 OAuth 与允许的头字段透传 | 复制登录文件、刷新 token、转成 Platform API key |
-| 压缩兼容 | `compaction.js` | 普通摘要请求转成 `mb-cmp1` 检查点，并回放新窗口 | 对所有请求截断历史、替官方订阅解密 |
-| Factory 适配层 | `factory-proxy.js` / `factory-gateway.js` / `factory-attachments.js` / `factory-instructions.js` | 网关协议边界、身份字段、出站图像优化 | 启动 Droid agent、修改原始附件、接管 Codex 工具循环 |
-| Factory 查询与转换 | `factory-api.js` / `factory-quota-cpa.js` | 只读额度查询及 CPA 展示数据规范化 | 充值、重置额度、模型推理 |
-| CPA 账号额度插件 | `integrations/cpa-account-quota/` | Go shared library；注册只读 management/quota 接口 | 转换推理协议、修改 provider、读取浏览器提供的上游 key |
-| CPA 管理页 overlay | `integrations/cpa-quota-ui/` | React 卡片、翻译、刷新/错误状态和连接切换隔离 | 独立服务、保存第三方凭据 |
-| 历史适配器 | `command-code.js` / `web-search.js` / `tool-names.js` | 兼容旧直连配置 | 在推荐的 CPA passthrough 路径自动启用 |
+| bridge | `src/bridge/server.js` / `src/core/provider-config.js` | 模型目录合并、展示顺序、路由、文件凭据解析 | 第三方账号登录、账号池、额度计费 |
+| 官方订阅转发 | `src/adapters/openai/subscription.js` | 当前客户端 OAuth 与允许的头字段透传 | 复制登录文件、刷新 token、转成 Platform API key |
+| 压缩兼容 | `src/core/compaction.js` | 普通摘要请求转成 `mb-cmp1` 检查点，并回放新窗口 | 对所有请求截断历史、替官方订阅解密 |
+| Factory 适配层 | `src/adapters/factory/server.js` / `src/adapters/factory/gateway.js` / `src/adapters/factory/attachments.js` / `src/adapters/factory/instructions.js` | 网关协议边界、身份字段、出站图像优化 | 启动 Droid agent、修改原始附件、接管 Codex 工具循环 |
+| Factory 查询与转换 | `src/adapters/factory/api.js` / `src/adapters/factory/quota.js` | 只读额度查询及 CPA 展示数据规范化 | 充值、重置额度、模型推理 |
+| CPA 账号额度插件 | `integrations/cpa/account-quota/` | Go shared library；注册只读 management/quota 接口 | 转换推理协议、修改 provider、读取浏览器提供的上游 key |
+| CPA 管理页 overlay | `integrations/cpa/quota-ui/` | React 卡片、翻译、刷新/错误状态和连接切换隔离 | 独立服务、保存第三方凭据 |
+| 历史适配器 | `src/adapters/command-code/client.js` / `src/adapters/command-code/search.js` / `src/core/tool-names.js` | 兼容旧直连配置 | 在推荐的 CPA passthrough 路径自动启用 |
 
-Go 源码目录改名为 `cpa-account-quota`，但已部署的插件 ID、文件名
+Go 源码位于 `integrations/cpa/account-quota/`，但已部署的插件 ID、文件名
 `factory-quota.so` 和 `/v0/management/plugins/factory-quota/*` 路径保持兼容，
 避免升级导致配置和页面失联。插件支持 Factory 和 Command Code。
 目录改名不是额外进程或第二套插件。
@@ -70,14 +92,14 @@ Go 源码目录改名为 `cpa-account-quota`，但已部署的插件 ID、文件
 
 | 配置/数据 | 仓库模板 | 运行时位置 | 所有者 |
 | --- | --- | --- | --- |
-| bridge 主配置 | `config.hybrid.example.json` | `~/.metabridge/config.json` | metabridge |
-| bridge provider | `providers/*.example.json` | `~/.metabridge/providers/*.json` | metabridge |
+| bridge 主配置 | `config/bridge/config.hybrid.example.json` | `~/.metabridge/config.json` | metabridge |
+| bridge provider | `config/providers/*.example.json` | `~/.metabridge/providers/*.json` | metabridge |
 | CPA provider、上游 key、账号池、插件开关 | CPA 模板片段与显式迁移脚本 | `~/.config/cliproxyapi/config.json` | CPA |
 | bridge → CPA 访问密钥 | 仅 `auth.file` 引用 | `~/.metabridge/cpa-api-key` | 本机部署 |
-| Factory 网关与额度配置 | `providers/factory-quota.example.json` | `~/.config/cliproxyapi/quota/factory.json` | Factory 适配层 |
+| Factory 网关与额度配置 | `config/providers/factory-quota.example.json` | `~/.config/cliproxyapi/quota/factory.json` | Factory 适配层 |
 | Factory 凭据 | 仅 `auth.file` 引用 | 上述配置引用的私有 key 文件 | 本机部署 |
 | Command Code 额度凭据 | 无重复 key 文件 | CPA 中唯一的 `command-code` provider key | CPA |
-| Factory 模型目录 | `providers/factory-models.catalog.json` | 经显式配置脚本导入 | 静态元数据，不含凭据 |
+| Factory 模型目录 | `config/catalogs/factory-models.catalog.json` | 经显式配置脚本导入 | 静态元数据，不含凭据 |
 | systemd 单元 | `deploy/*.service` / `*.timer` | `~/.config/systemd/user/` | 运维 |
 | 管理页与动态库 | 只提交 overlay / Go 源码 | CPA 的 `static/management.html` / `plugins/factory-quota.so` | 构建产物 |
 
@@ -103,9 +125,9 @@ Factory 出站图像优化只改变发送副本，不修改用户原文件或 Co
 ## 部署与回滚
 
 - 配置变更：修改对应私有配置，再重启其所属服务；不重建插件。
-- 插件变更：在 `integrations/cpa-account-quota` 执行 Go 测试与 shared library 构建。
+- 插件变更：在 `integrations/cpa/account-quota` 执行 Go 测试与 shared library 构建。
 - 页面变更：向固定的 CPA 管理页 commit 应用 overlay，执行 Bun 测试、lint、构建。
-- 插件/页面部署：使用 `scripts/install-factory-quota.js --activate` 安装备份后的产物，
+- 插件/页面部署：使用 `integrations/cpa/scripts/install-account-quota.js --activate` 安装备份后的产物，
   重启 CPA；不改变监听地址、管理密码或模型 provider。
 - 插件 ID 保持 `factory-quota`。升级时安装到相同位置，不新建重复插件。
 - 产物回滚：使用安装器保存的配置、动态库及 HTML 备份，重启 CPA。

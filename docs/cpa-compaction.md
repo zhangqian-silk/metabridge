@@ -49,7 +49,7 @@ do not disable it mid-thread expecting CPA to understand those checkpoints.
 Verification:
 `npm test` covers scoping, large historical images, summary failure and checkpoint
 replay. For an explicit live replay of an existing failed compaction request:
-`node scripts/verify-cpa-compaction.js --allow-inference /absolute/path/to/CPA-error.log`.
+`node scripts/verify-cpa-src/core/compaction.js --allow-inference /absolute/path/to/CPA-error.log`.
 This sends that history to the same model through the existing CPA route, then
 checks a new tool-call/result round trip after the checkpoint. It prints no
 transcript or credentials; its private checkpoint artifact is saved with mode 0600.

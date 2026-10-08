@@ -5,8 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { spawn } = require('node:child_process');
-const { optimizeAttachments } = require('../factory-attachments');
-const { loadFactoryConfig } = require('../factory-api');
+const { optimizeAttachments } = require('../src/adapters/factory/attachments');
+const { loadFactoryConfig } = require('../src/adapters/factory/api');
 
 async function main() {
   const source = process.argv.slice(2).find(arg => !arg.startsWith('--'));

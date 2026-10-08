@@ -7,8 +7,11 @@
 `base_instructions.txt` 本机指令缓存、动态库或构建出的管理 HTML。
 没有本机指令缓存时，bridge 使用代码中已有的最小默认指令。
 
-`providers/*.example.json` 是模板，`providers/*.catalog.json` 是可共享的模型元数据；
-其他 `providers/*.json` 是私有运行配置。切勿用 `git add -f` 绕过忽略规则。
+`config/bridge/*.example.json` 与 `config/providers/*.example.json` 是模板，
+`config/catalogs/*.catalog.json` 是可共享的模型元数据；
+其他 `config/**/*.json` 和旧的 `providers/*.json` 路径默认不允许提交。
+运行时仍使用 `~/.metabridge/` 下的私有配置；模板中的相对 `providers/` 引用
+是用户目录路径，不是仓库目录。切勿用 `git add -f` 绕过忽略规则。
 代码审查应分别检查 bridge、网关兼容、只读插件、页面 overlay 和部署配置。
 
 ## 离线检查
@@ -20,7 +23,7 @@ npm ci
 npm test
 npm audit --omit=dev
 node scripts/check-release-files.js
-cd integrations/cpa-account-quota
+cd integrations/cpa/account-quota
 go test -race ./...
 go build -buildmode=c-shared -o /absolute/build/factory-quota.so .
 ```
@@ -36,7 +39,7 @@ go build -buildmode=c-shared -o /absolute/build/factory-quota.so .
 不要覆盖已有工作目录。
 
 ```bash
-node scripts/prepare-factory-quota-ui.js /absolute/path/to/management-ui
+node integrations/cpa/scripts/prepare-quota-ui.js /absolute/path/to/management-ui
 cd /absolute/path/to/management-ui
 bun install --frozen-lockfile
 bun test tests/factoryQuota.test.ts tests/commandQuota.test.ts

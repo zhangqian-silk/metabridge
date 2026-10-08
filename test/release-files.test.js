@@ -4,12 +4,14 @@ const assert = require('node:assert/strict');
 const { forbiddenPath, containsCredential, audit } = require('../scripts/check-release-files');
 
 test('release audit separates templates/catalogs from credentials and artifacts', () => {
-  for (const file of ['config.example.json', 'config.hybrid.example.json', '.env.example',
-    'providers/cpa.example.json', 'providers/factory-models.catalog.json',
-    'integrations/cpa-account-quota/go.mod', 'scripts/query-factory-quota.js']) {
+  for (const file of ['config/bridge/config.example.json', 'config/bridge/config.hybrid.example.json', '.env.example',
+    'config/providers/cpa.example.json', 'config/catalogs/factory-models.catalog.json',
+    'src/adapters/command-code/defaults.json',
+    'integrations/cpa/account-quota/go.mod', 'scripts/query-factory-quota.js']) {
     assert.equal(forbiddenPath(file), false, file);
   }
-  for (const file of ['config.json', 'providers/cpa.json', 'factory-api-key', 'cpa-api-key',
+  for (const file of ['config.json', 'providers/cpa.json', 'config/providers/cpa.json',
+    'config/catalogs/private.json', 'config/secrets.json', 'factory-api-key', 'cpa-api-key',
     '.env', '.env.local', 'base_instructions.txt', 'factory-quota.so',
     'static/management.html.quota-backup-123', 'auth/user.json', 'node_modules/sharp/package.json']) {
     assert.equal(forbiddenPath(file), true, file);

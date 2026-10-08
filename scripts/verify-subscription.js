@@ -37,7 +37,7 @@ async function main() {
       host: '127.0.0.1', port, logLevel: 'silent',
       providerFiles: ['subscription.json', 'mock-catalog.json'],
     };
-    const official = { ...require('../providers/openai-subscription.example.json'), priority: 0 };
+    const official = { ...require('../config/providers/openai-subscription.example.json'), priority: 0 };
     const mock = {
       name: 'mock-catalog', prefix: 'mock/', displayPrefix: '验证目录',
       base: 'http://127.0.0.1:1', priority: 100, auth: { type: 'none' },
