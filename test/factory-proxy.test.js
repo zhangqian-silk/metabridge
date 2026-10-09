@@ -4,6 +4,21 @@ const assert = require('node:assert/strict');
 const { once } = require('node:events');
 const { createFactoryServer, validateGateway } = require('../src/adapters/factory/server');
 const { mergeFactoryProviders } = require('../scripts/configure-factory-cpa');
+
+test('Factory accounts coexist and updating one preserves the other account', () => {
+  const first = mergeFactoryProviders({}, config(), 'first-private');
+  const secondConfig = config();
+  secondConfig.gateway.port = 8320;
+  const both = mergeFactoryProviders(first, secondConfig, 'second-private', 'factory-2');
+  for (const group of ['codex', 'claude', 'openai-compatibility']) {
+    assert.equal(both['api-keys'][group].length, 2);
+    assert.deepEqual(both['api-keys'][group][0], first['api-keys'][group][0]);
+    assert.equal(both['api-keys'][group][1].keys[0]['api-key'], 'second-private');
+    assert.match(both['api-keys'][group][1]['base-url'], /:8320/);
+  }
+  assert.deepEqual(mergeFactoryProviders(both, secondConfig, 'second-private', 'factory-2'), both);
+  assert.throws(() => mergeFactoryProviders(first, secondConfig, 'second-private', '../bad'));
+});
 const { mergeFactoryModels } = require('../scripts/configure-factory-models');
 const sharp = require('sharp');
 const config = () => ({

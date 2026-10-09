@@ -31,7 +31,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -39,6 +42,9 @@ import (
 // CPA ABI 1 / JSON schema 6, verified against v8.0.12 sdk/pluginabi.
 // No model/auth/executor capabilities: this plugin cannot alter model routing.
 const accountRoute = "/v0/management/plugins/factory-quota/account"
+const accountsRoute = "/v0/management/plugins/factory-quota/accounts"
+
+var accountIDPattern = regexp.MustCompile(`^factory(?:-[a-z0-9]+)*$`)
 
 var errUnavailable = errors.New("Factory billing quota unavailable")
 
@@ -106,7 +112,7 @@ func handleMethod(method string, request []byte) (any, error) {
 	case "plugin.register", "plugin.reconfigure":
 		return map[string]any{
 			"schema_version": 6,
-			"metadata": map[string]any{"Name": "Factory and Command Code Account Quota", "Version": "0.2.0",
+			"metadata": map[string]any{"Name": "Factory and Command Code Account Quota", "Version": "0.3.0",
 				"Author": "metabridge", "GitHubRepository": "local://codex-metabridge/integrations/cpa/account-quota"},
 			"capabilities": map[string]bool{"quota_provider": true, "management_api": true},
 		}, nil
@@ -136,18 +142,26 @@ func handleMethod(method string, request []byte) (any, error) {
 	case "management.register":
 		return map[string]any{"routes": []map[string]string{
 			{"Method": "GET", "Path": accountRoute},
+			{"Method": "GET", "Path": accountsRoute},
 			{"Method": "GET", "Path": commandRoute},
 		}}, nil
 	case "management.handle":
 		var req struct{ Method, Path string }
 		if json.Unmarshal(request, &req) != nil || req.Method != "GET" ||
-			(req.Path != accountRoute && req.Path != commandRoute) {
+			(req.Path != accountRoute && req.Path != accountsRoute && req.Path != commandRoute) {
 			return managementResponse(404, map[string]string{"error": "Unsupported Factory route"}), nil
 		}
 		if req.Path == commandRoute {
 			quota, err := fetchCommandQuota()
 			if err != nil {
 				return managementResponse(502, map[string]string{"error": errCommandUnavailable.Error()}), nil
+			}
+			return managementResponse(200, quota), nil
+		}
+		if req.Path == accountsRoute {
+			quota, err := fetchAccountQuotas()
+			if err != nil {
+				return managementResponse(502, map[string]string{"error": errUnavailable.Error()}), nil
 			}
 			return managementResponse(200, quota), nil
 		}
@@ -169,7 +183,14 @@ func managementResponse(status int, value any) any {
 }
 
 func readCredential(home string) (string, string, error) {
-	configPath := filepath.Join(home, ".config/cliproxyapi/quota/factory.json")
+	return readAccountCredential(home, "factory")
+}
+
+func readAccountCredential(home, id string) (string, string, error) {
+	if !accountIDPattern.MatchString(id) {
+		return "", "", errUnavailable
+	}
+	configPath := filepath.Join(home, ".config/cliproxyapi/quota", id+".json")
 	raw, err := readPrivateFile(configPath)
 	if err != nil {
 		return "", "", errUnavailable
@@ -226,7 +247,71 @@ func fetchQuota() (json.RawMessage, error) {
 	if err != nil {
 		return nil, errUnavailable
 	}
-	url, key, err := readCredential(home)
+	return fetchAccountQuota(home, "factory")
+}
+
+func factoryAccountIDs(home string) ([]string, error) {
+	entries, err := os.ReadDir(filepath.Join(home, ".config/cliproxyapi/quota"))
+	if err != nil {
+		return nil, errUnavailable
+	}
+	ids := []string{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		id := strings.TrimSuffix(entry.Name(), ".json")
+		if accountIDPattern.MatchString(id) {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 || len(ids) > 16 {
+		return nil, errUnavailable
+	}
+	sort.Strings(ids)
+	return ids, nil
+}
+
+type accountQuota struct {
+	ID    string          `json:"id"`
+	Quota json.RawMessage `json:"quota,omitempty"`
+	Error string          `json:"error,omitempty"`
+}
+
+func fetchAccountQuotas() (any, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, errUnavailable
+	}
+	return fetchAccountQuotasForHome(home)
+}
+
+func fetchAccountQuotasForHome(home string) (any, error) {
+	ids, err := factoryAccountIDs(home)
+	if err != nil {
+		return nil, err
+	}
+	accounts := make([]accountQuota, len(ids))
+	var pending sync.WaitGroup
+	for i, id := range ids {
+		pending.Add(1)
+		go func(i int, id string) {
+			defer pending.Done()
+			accounts[i].ID = id
+			quota, err := fetchAccountQuota(home, id)
+			if err != nil {
+				accounts[i].Error = errUnavailable.Error()
+			} else {
+				accounts[i].Quota = quota
+			}
+		}(i, id)
+	}
+	pending.Wait()
+	return map[string]any{"accounts": accounts}, nil
+}
+
+func fetchAccountQuota(home, id string) (json.RawMessage, error) {
+	url, key, err := readAccountCredential(home, id)
 	if err != nil {
 		return nil, errUnavailable
 	}

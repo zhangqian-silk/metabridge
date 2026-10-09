@@ -55,15 +55,36 @@ export function normalizeFactoryQuota(value: unknown): FactoryQuota {
   };
 }
 
-export async function fetchFactoryQuota(apiBase: string): Promise<FactoryQuota | null> {
+export interface FactoryAccountQuota {
+  id: string;
+  quota: FactoryQuota | null;
+}
+
+export function normalizeFactoryAccounts(value: unknown): FactoryAccountQuota[] {
+  if (!record(value) || !Array.isArray(value.accounts) ||
+    !value.accounts.length || value.accounts.length > 16) throw new Error('Invalid accounts response');
+  const ids = new Set<string>();
+  return value.accounts.map((account) => {
+    if (!record(account) || typeof account.id !== 'string' ||
+      !/^factory(?:-[a-z0-9]+)*$/.test(account.id) || ids.has(account.id)) {
+      throw new Error('Invalid account identity');
+    }
+    ids.add(account.id);
+    let quota: FactoryQuota | null = null;
+    try { quota = normalizeFactoryQuota(account.quota); } catch { /* Account-local failure. */ }
+    return { id: account.id, quota };
+  });
+}
+
+export async function fetchFactoryQuotas(apiBase: string): Promise<FactoryAccountQuota[] | null> {
   const revision = apiClient.getConnectionRevision();
   const plugins = await pluginsApi.list();
   if (revision !== apiClient.getConnectionRevision()) throw new Error('Connection changed');
   if (!plugins.pluginsEnabled || !plugins.plugins.some((plugin) =>
     plugin.id === 'factory-quota' && plugin.registered && plugin.effectiveEnabled)) return null;
   // Plugin-declared path is v0, independently of the UI's native v8 API contract.
-  const url = `${normalizeApiBase(apiBase)}/v0/management/plugins/factory-quota/account`;
+  const url = `${normalizeApiBase(apiBase)}/v0/management/plugins/factory-quota/accounts`;
   const result = await apiClient.get<unknown>(url);
   if (revision !== apiClient.getConnectionRevision()) throw new Error('Connection changed');
-  return normalizeFactoryQuota(result);
+  return normalizeFactoryAccounts(result);
 }

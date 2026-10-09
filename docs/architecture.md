@@ -70,7 +70,7 @@ scripts/ / deploy/ / test/        运维命令、服务单元、回归验证
 依赖方向：编排层使用核心与适配器；核心只依赖核心；适配器不导入编排层。
 `src/` 不加载 CPA 外挂或部署示例，运行时默认值由对应源码模块持有。
 `test/architecture.test.js` 检查相对模块依赖及兼容入口，防止目录重新混用。
-本次分层迁移不拆出新进程，不引入插件框架，也不改变请求处理策略。
+模块分层不要求额外进程或新的插件框架。
 
 | 组件 | 位置 | 负责 | 不负责 |
 | --- | --- | --- | --- |
@@ -83,7 +83,7 @@ scripts/ / deploy/ / test/        运维命令、服务单元、回归验证
 | CPA 管理页 overlay | `integrations/cpa/quota-ui/` | React 卡片、翻译、刷新/错误状态和连接切换隔离 | 独立服务、保存第三方凭据 |
 | 历史适配器 | `src/adapters/command-code/client.js` / `src/adapters/command-code/search.js` / `src/core/tool-names.js` | 兼容旧直连配置 | 在推荐的 CPA passthrough 路径自动启用 |
 
-Go 源码位于 `integrations/cpa/account-quota/`，但已部署的插件 ID、文件名
+Go 源码位于 `integrations/cpa/account-quota/`；插件 ID、文件名
 `factory-quota.so` 和 `/v0/management/plugins/factory-quota/*` 路径保持兼容，
 避免升级导致配置和页面失联。插件支持 Factory 和 Command Code。
 目录改名不是额外进程或第二套插件。
@@ -94,6 +94,7 @@ Go 源码位于 `integrations/cpa/account-quota/`，但已部署的插件 ID、�
 | --- | --- | --- | --- |
 | bridge 主配置 | `config/bridge/config.hybrid.example.json` | `~/.metabridge/config.json` | metabridge |
 | bridge provider | `config/providers/*.example.json` | `~/.metabridge/providers/*.json` | metabridge |
+| 本机部署/验证记录 | 无部署状态模板 | `~/.metabridge/docs/*.md` | 操作者 |
 | CPA provider、上游 key、账号池、插件开关 | CPA 模板片段与显式迁移脚本 | `~/.config/cliproxyapi/config.json` | CPA |
 | bridge → CPA 访问密钥 | 仅 `auth.file` 引用 | `~/.metabridge/cpa-api-key` | 本机部署 |
 | Factory 网关与额度配置 | `config/providers/factory-quota.example.json` | `~/.config/cliproxyapi/quota/factory.json` | Factory 适配层 |
@@ -110,6 +111,24 @@ Go 源码位于 `integrations/cpa/account-quota/`，但已部署的插件 ID、�
 Factory 与 Command Code 的额度接口实现属于插件/适配代码。查询使用固定、
 已验证的账号接口和服务端配置来源；不允许浏览器替换目标 URL。
 当前 Command Code 多 key 会显式失败，不猜测账号、不错误合并余额。
+
+## 运行时记录与仓库文档
+
+仓库 `docs/` 描述接口、配置语义、限制和可复用的部署/验证步骤，不存放
+某台机器的账号数量、启用模型、监听状态、路由策略、TTL 或额度快照。
+这些事实只写入私有运行记录；配置修改不需要同步修改仓库说明或模板。
+
+`scripts/write-runtime-note.js <name>` 从 stdin 接受操作者准备的 Markdown，
+写入 `~/.metabridge/docs/<name>.md`，与 cwd 和 `MB_CONFIG_FILE` 的位置无关。
+默认拒绝覆盖，`--replace` 才允许原子替换，并保留 0600 备份。
+目录为 0700；拒绝路径穿越、符号链接目标、超过 256 KiB 的内容及已知凭据形态。
+它不读取账号配置、不查询上游、不由服务或配置命令自动调用。
+记录不得包含凭据，形态检查不能保证发现所有秘密。
+`.metabridge/` 已被 Git 忽略，发布检查也拒绝此目录。
+
+bridge 主配置仍可通过 `MB_CONFIG_FILE` 指定；
+此变量不会把运行记录重定向到配置所在目录或仓库。
+CPA 自有配置继续由 `~/.config/cliproxyapi/` 管理，不迁移凭据或改变服务链路。
 
 ## 压缩与附件边界
 

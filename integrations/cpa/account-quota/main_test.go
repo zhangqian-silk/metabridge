@@ -2,10 +2,76 @@ package main
 
 import (
 	"encoding/json"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestAccountQuotaFailureDoesNotHideOtherAccount(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config/cliproxyapi/quota")
+	os.MkdirAll(dir, 0700)
+	for i, id := range []string{"factory", "factory-2"} {
+		key := id + "-private"
+		fail := i == 1
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/v1/quota" || r.Header.Get("Authorization") != "Bearer "+key {
+				t.Error("wrong account credential or path")
+			}
+			if fail {
+				w.WriteHeader(502)
+				w.Write([]byte("secret upstream body"))
+				return
+			}
+			w.Write([]byte(`{"groups":[{"displayName":"Standard","buckets":[{"window":"weekly","remainingFraction":0.2}]}]}`))
+		}))
+		defer server.Close()
+		raw, _ := json.Marshal(map[string]any{"name": "factory", "base_url": "https://api.factory.ai",
+			"auth":    map[string]string{"type": "keyfile", "file": id + "-key"},
+			"gateway": map[string]any{"host": "127.0.0.1", "port": server.Listener.Addr().(*net.TCPAddr).Port}})
+		os.WriteFile(filepath.Join(dir, id+".json"), raw, 0600)
+		os.WriteFile(filepath.Join(dir, id+"-key"), []byte(key), 0600)
+	}
+	result, err := fetchAccountQuotasForHome(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accounts := result.(map[string]any)["accounts"].([]accountQuota)
+	if len(accounts) != 2 || accounts[0].ID != "factory" || len(accounts[0].Quota) == 0 ||
+		accounts[0].Error != "" || accounts[1].ID != "factory-2" || len(accounts[1].Quota) != 0 ||
+		accounts[1].Error != errUnavailable.Error() {
+		t.Fatal("account success/failure isolation failed")
+	}
+}
+
+func TestSeparateFactoryCredentialFiles(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config/cliproxyapi/quota")
+	os.MkdirAll(dir, 0700)
+	for i, id := range []string{"factory", "factory-2"} {
+		raw, _ := json.Marshal(map[string]any{"name": "factory", "base_url": "https://api.factory.ai",
+			"auth":    map[string]string{"type": "keyfile", "file": id + "-key"},
+			"gateway": map[string]any{"host": "127.0.0.1", "port": 8319 + i}})
+		os.WriteFile(filepath.Join(dir, id+".json"), raw, 0600)
+		os.WriteFile(filepath.Join(dir, id+"-key"), []byte(id+"-private"), 0600)
+		url, key, err := readAccountCredential(home, id)
+		if err != nil || key != id+"-private" || url == "" {
+			t.Fatal("account credential isolation failed")
+		}
+	}
+	for _, id := range []string{"../factory", "factory.json", "other", "factory-"} {
+		if _, _, err := readAccountCredential(home, id); err == nil {
+			t.Fatal("invalid account accepted")
+		}
+	}
+	ids, err := factoryAccountIDs(home)
+	if err != nil || len(ids) != 2 || ids[0] != "factory" || ids[1] != "factory-2" {
+		t.Fatal("account discovery failed")
+	}
+}
 
 func TestQuotaPluginIsReadOnlyAndDoesNotRegisterRouting(t *testing.T) {
 	result, err := handleMethod("plugin.register", nil)
