@@ -13,7 +13,8 @@ test('release audit separates templates/catalogs from credentials and artifacts'
   for (const file of ['config.json', 'providers/cpa.json', 'config/providers/cpa.json',
     'config/catalogs/private.json', 'config/secrets.json', 'factory-api-key', 'cpa-api-key',
     '.env', '.env.local', 'base_instructions.txt', 'factory-quota.so',
-    'static/management.html.quota-backup-123', 'auth/user.json', 'node_modules/sharp/package.json']) {
+    'static/management.html.quota-backup-123', 'auth/user.json', 'node_modules/sharp/package.json',
+    '.metabridge/docs/deployment.md']) {
     assert.equal(forbiddenPath(file), true, file);
   }
 });

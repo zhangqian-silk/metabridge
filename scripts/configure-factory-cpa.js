@@ -6,14 +6,16 @@ const path = require('node:path');
 const { loadFactoryConfig } = require('../src/adapters/factory/api');
 const { validateGateway } = require('../src/adapters/factory/server');
 
-function mergeFactoryProviders(cpa, factory, key) {
+function mergeFactoryProviders(cpa, factory, key, account = 'factory') {
+  if (!/^factory(?:-[a-z0-9]+)*$/.test(account)) throw new Error('invalid Factory account');
   const gateway = validateGateway(factory);
   const base = `http://${gateway.host === '::1' ? '[::1]' : '127.0.0.1'}:${gateway.port ?? 8319}/v1`;
   const groups = { responses: ['codex', 'factory-openai'],
     messages: ['claude', 'factory-anthropic'], chat: ['openai-compatibility', 'factory-core'] };
   const result = structuredClone(cpa);
   result['api-keys'] ??= {};
-  for (const [protocol, [group, name]] of Object.entries(groups)) {
+  for (const [protocol, [group, defaultName]] of Object.entries(groups)) {
+    const name = defaultName.replace(/^factory/, account);
     const original = result['api-keys'][group] ?? [];
     const models = gateway.models.filter(model => model.protocol === protocol);
     if (!Array.isArray(original)) throw new Error('invalid CPA provider group');
@@ -37,14 +39,17 @@ function mergeFactoryProviders(cpa, factory, key) {
 async function main() {
   if (!process.argv.includes('--activate')) throw new Error('requires explicit --activate');
   const directory = path.join(os.homedir(), '.config/cliproxyapi');
-  const { config, key } = loadFactoryConfig(path.join(directory, 'quota/factory.json'));
+  const index = process.argv.indexOf('--account');
+  const account = index === -1 ? 'factory' : process.argv[index + 1];
+  if (!/^factory(?:-[a-z0-9]+)*$/.test(account ?? '')) throw new Error('invalid Factory account');
+  const { config, key } = loadFactoryConfig(path.join(directory, `quota/${account}.json`));
   const gateway = validateGateway(config);
   const host = gateway.host === '::1' ? '[::1]' : '127.0.0.1';
   const health = await fetch(`http://${host}:${gateway.port ?? 8319}/healthz`, { signal: AbortSignal.timeout(5000) });
   if (!health.ok || !(await health.json()).ok) throw new Error('Factory proxy is not ready');
   const filename = path.join(directory, 'config.json');
   const current = JSON.parse(fs.readFileSync(filename, 'utf8'));
-  const next = mergeFactoryProviders(current, config, key);
+  const next = mergeFactoryProviders(current, config, key, account);
   if (JSON.stringify(next) === JSON.stringify(current)) { console.log('Factory CPA configuration unchanged'); return; }
   const backup = `${filename}.factory-backup-${Date.now()}`;
   fs.copyFileSync(filename, backup, fs.constants.COPYFILE_EXCL);

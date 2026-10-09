@@ -55,6 +55,26 @@ CPA 安装和页面构建脚本归属 `integrations/cpa/scripts/`，旧脚本路
 指令缓存留在用户目录，不提交到仓库。详细文件归属、构建、发布及回滚见
 [架构与配置说明](docs/architecture.md) 和 [发布检查](docs/releasing.md)。
 
+### 私有运行时记录
+
+`~/.metabridge/` 存放本机配置、provider 和备份；
+本机部署说明、账号标签、模型过滤、路由/TTL 选择及验证结果统一放在
+`~/.metabridge/docs/`，不写入仓库 `docs/` 或共享配置模板。
+仓库文档只维护可复用的行为、配置语义、操作方法和示例。
+
+显式保存一份不含凭据的 Markdown 记录：
+
+```bash
+node scripts/write-runtime-note.js deployment < /absolute/path/to/note.md
+# 更新已有记录必须显式选择替换，会保留私有备份：
+node scripts/write-runtime-note.js deployment --replace < /absolute/path/to/note.md
+```
+
+命令固定写入用户目录，与工作目录、`MB_CONFIG_FILE` 无关；
+文件权限为 0600，目录为 0700。服务和配置脚本不会自动生成或同步文档。
+不得将 key、token、管理密码或原始凭据文件写入记录；
+命令的凭据形态检查只是一层辅助保护，不代替人工检查。
+
 ### Command Code 账号额度
 
 CPA 额度页支持 Command Code 的 5 小时/周窗口、订阅/购买/免费余额和订阅周期结束时间。
@@ -70,12 +90,12 @@ CPA 额度页支持 Command Code 的 5 小时/周窗口、订阅/购买/免费�
 模型链路为 `Codex → metabridge → CPA → 本机 Factory 适配层 → Factory 网关`，
 不运行 Droid agent。适配层只补充已验证的客户端版本字段与 Factory 身份提示前缀；
 CPA 负责 Responses/Messages/Chat 协议转换，官方/CMD/Gateway 不经过该适配层。
-已配置 53 个非 Gemini 模型；其中 GPT-6.1 Sol、Sonnet 5.5、Haiku 4.5、
-GLM-5.3 已完成推理验证，其余按用户要求直接配置、不逐个验证。
+静态候选模型目录与实际允许列表分开；本机模型权限、过滤条件和验证结果
+由私有配置及运行记录维护，不把单个账号的结果推广到全部候选模型。
 `factory_prefix` 保留原生指令位置但增加上游身份文本，不等于原样转发；
 `fold_system_into_user` 仍作为参考 pi 的显式探测选项，会改变指令优先级。
 内部网关并非公开稳定 API。已新增只读 `factory-quota` CPA 动态库插件和
-管理页 overlay，在 `#/quota` 显示单账号 Standard/Core 窗口、重置时间及额外余额。
+管理页 overlay，在 `#/quota` 按配置账号显示 Standard/Core 窗口、重置时间及额外余额。
 缺失值保持未知，不伪造 OAuth 认证文件，不向浏览器下发 Factory key。
 源码、构建部署和管理页升级注意事项见上述接入说明。
 
@@ -335,17 +355,15 @@ node scripts/verify-subscription.js your-model-id
 
 网络出口必须经过 HTTP(S) 代理时，在支持环境代理的 Node.js 版本中显式启用
 `NODE_USE_ENV_PROXY=1`，并通过 `NO_PROXY` / `no_proxy` 排除回环地址。
-例如本机 Node.js v24.20.0 的验证命令（保留已有代理地址，仅调整本次进程环境）：
+例如以下验证命令只调整该进程的代理环境：
 
 ```bash
 NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost NODE_USE_ENV_PROXY=1 \
   node scripts/verify-subscription.js
 ```
 
-2026-10-02 本机验证：以上命令通过现有 ChatGPT 登录，经临时 bridge 请求
-`gpt-5.6-sol`，返回 `METABRIDGE_OK`。未使用 gateway，未修改正式配置或重启现有服务。
-本次真实验证覆盖目录解析、鉴权和流式推理；原生 compact 与真实第三方调用仍只有模拟测试，
-不代表所有模型、订阅套餐或客户端版本都通过了验证。
+验证输出记录在 `~/.metabridge/docs/`。一次成功不代表其他模型、订阅套餐、
+客户端版本、原生 compact 或第三方链路都经过验证。
 
 ### Command Code 当前适配边界
 

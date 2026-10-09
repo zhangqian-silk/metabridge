@@ -27,6 +27,10 @@
   font-size: 13px;
 }
 .error { color: var(--danger-color, var(--text-primary)); }
+.account {
+  & + & { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+  > h3 { margin: 0 0 16px; font-size: 15px; overflow-wrap: anywhere; }
+}
 @media (max-width: 600px) {
   .groups { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 }

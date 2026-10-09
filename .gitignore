@@ -29,4 +29,5 @@ backups/
 dist/
 coverage/
 .cache/
+.metabridge/
 .DS_Store

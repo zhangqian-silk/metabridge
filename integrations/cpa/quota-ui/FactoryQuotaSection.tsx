@@ -7,7 +7,7 @@ import { apiClient } from '@/services/api/client';
 import { bindQuotaClasses } from './types';
 import bodyStyles from './components/QuotaBody.module.scss';
 import styles from './FactoryQuotaSection.module.scss';
-import { fetchFactoryQuota, type FactoryQuota } from './factoryQuota';
+import { fetchFactoryQuotas, type FactoryAccountQuota } from './factoryQuota';
 import { FactoryQuotaBody } from './FactoryQuotaBody';
 
 const classes = bindQuotaClasses(bodyStyles, 'FactoryQuotaSection');
@@ -17,7 +17,7 @@ export function FactoryQuotaSection() {
   const apiBase = useAuthStore((state) => state.apiBase);
   const managementKey = useAuthStore((state) => state.managementKey);
   const connected = useAuthStore((state) => state.connectionStatus === 'connected');
-  const [quota, setQuota] = useState<FactoryQuota | null>(null);
+  const [quota, setQuota] = useState<FactoryAccountQuota[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [available, setAvailable] = useState(false);
@@ -30,7 +30,7 @@ export function FactoryQuotaSection() {
     setLoading(true);
     setError(false);
     try {
-      const data = await fetchFactoryQuota(apiBase);
+      const data = await fetchFactoryQuotas(apiBase);
       if (requestId.current !== ticket || revision !== apiClient.getConnectionRevision()) return;
       setQuota(data);
       setAvailable(data !== null);
@@ -63,9 +63,13 @@ export function FactoryQuotaSection() {
         <p className={styles.note}>{t('factory_quota.account_note')}</p>
         {error && <p role="alert" className={styles.error}>{t('factory_quota.error')}</p>}
         {loading && !quota && <p role="status">{t('factory_quota.loading')}</p>}
-        {quota && <FactoryQuotaBody quota={quota} classes={classes} styles={{
-          groups: styles.groups, group: styles.group, window: styles.window, row: styles.row, note: styles.note,
-        }} />}
+        {quota?.map((account) => <div key={account.id} className={styles.account}>
+          <h3>{account.id}</h3>
+          {!account.quota && <p role="alert" className={styles.error}>{t('factory_quota.error')}</p>}
+          {account.quota && <FactoryQuotaBody quota={account.quota} classes={classes} styles={{
+            groups: styles.groups, group: styles.group, window: styles.window, row: styles.row, note: styles.note,
+          }} />}
+        </div>)}
       </Card>
     </section>
   );

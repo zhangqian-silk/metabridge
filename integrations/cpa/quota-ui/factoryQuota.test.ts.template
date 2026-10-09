@@ -4,11 +4,23 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '../src/i18n';
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '../src/features/quota/types';
 import { FactoryQuotaBody } from '../src/features/quota/FactoryQuotaBody';
-import { normalizeFactoryQuota } from '../src/features/quota/factoryQuota';
+import { normalizeFactoryQuota, normalizeFactoryAccounts } from '../src/features/quota/factoryQuota';
 
 beforeAll(async () => { await i18n.changeLanguage('en'); });
 
 describe('Factory quota normalization', () => {
+  test('isolates account quota failures and rejects duplicate account identities', () => {
+    const accounts = [
+      { id: 'factory', quota: { groups: [{ displayName: 'Standard',
+        buckets: [{ window: 'weekly', remainingFraction: 0.2 }] }] } },
+      { id: 'factory-2', error: 'unavailable' },
+    ];
+    const result = normalizeFactoryAccounts({ accounts });
+    expect(result[0].quota?.groups[0].buckets[0].remainingFraction).toBe(0.2);
+    expect(result[1].quota).toBeNull();
+    expect(() => normalizeFactoryAccounts({ accounts: [accounts[0], accounts[0]] })).toThrow();
+    expect(() => normalizeFactoryAccounts({ accounts: [{ ...accounts[0], id: '../factory' }] })).toThrow();
+  });
   test('preserves exhausted quota, zero balance, unknown resets and missing windows', () => {
     const result = normalizeFactoryQuota({ groups: [
       { displayName: 'Standard', buckets: [{ window: '5h', remainingFraction: 0 }] },

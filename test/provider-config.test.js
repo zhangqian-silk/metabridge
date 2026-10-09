@@ -9,6 +9,23 @@ const http = require('node:http');
 const { spawn } = require('node:child_process');
 const { normalizeProviderPolicy, compileCompaction, compactionForModel, usesLocalCompaction } = require('../src/core/provider-config');
 
+test('CPA Factory filter keeps only non-fast Opus 5.5 and Sonnet 5.5 without restricting other providers', () => {
+  const { isModelAllowed } = require('../src/core/provider-config');
+  const provider = { modelFilter: {
+    deny: [{ regex: '^factory/(?!(?:claude-opus-5-5|claude-sonnet-5-5)$)' }],
+  } };
+  const catalog = require('../config/catalogs/factory-models.catalog.json');
+  assert.deepEqual(catalog.filter(model => isModelAllowed(provider, `factory/${model.id}`))
+    .map(model => model.id).sort(), ['claude-opus-5-5', 'claude-sonnet-5-5']);
+  for (const id of ['factory/claude-sonnet-5-5-fast', 'factory/claude-opus-5-5-fast',
+    'factory/claude-opus-5-5-extra', 'factory/new-model']) {
+    assert.equal(isModelAllowed(provider, id), false);
+  }
+  for (const id of ['fusecode/claude-opus-5-5-fast', 'relay/gpt-test', 'cmd/model']) {
+    assert.equal(isModelAllowed(provider, id), true);
+  }
+});
+
 test('explicit provider chains default to passthrough without inferring adaptations from prefixes', () => {
   for (const via of ['direct', 'cpa']) {
     const provider = { via, prefix: 'vendor/' };
