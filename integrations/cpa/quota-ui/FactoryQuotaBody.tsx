@@ -19,7 +19,8 @@ export function FactoryQuotaBody({ quota, classes, styles }: FactoryQuotaBodyPro
       <div className={styles.groups}>
         {['Standard', 'Core'].map((tier) => (
           <div className={styles.group} key={tier}>
-            <h3>{tier}</h3>
+            <h3>{tier === 'Core' ? 'Droid Core' : tier}</h3>
+            {tier === 'Core' && <p className={styles.note}>{t('factory_quota.core_note')}</p>}
             {WINDOWS.map((window) => {
               const bucket = quota.groups.find((group) => group.displayName === tier)
                 ?.buckets.find((item) => item.window === window);
