@@ -181,7 +181,10 @@ node scripts/verify-factory-codex.js --allow-inference factory/your-configured-m
 
 每个代理只查询 billing，成功缓存 30 秒并合并并发请求；
 失败不缓存、不冒充旧成功数据。页面首开查询和手动刷新，无后台轮询。
-Standard/Core 的窗口、重置时间与额外美元余额分别显示，缺失保持未知。
+Standard / Droid Core 的 5 小时、每周、每月额度与重置时间分别显示，
+两种类型使用独立额度，同一类型内的模型共享对应额度，不按模型重复计算。
+Droid Core 卡片标明适用的 Core 模型示例；接口的 `displayName: "Core"` 保持兼容。
+额外美元余额单独显示，不与订阅额度合并；缺失窗口和重置时间保持未知。
 管理连接切换时隔离请求。
 
 构建和安装示例：

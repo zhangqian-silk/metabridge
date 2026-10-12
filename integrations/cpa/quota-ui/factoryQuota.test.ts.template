@@ -58,4 +58,31 @@ describe('Factory quota normalization', () => {
     expect(html).toContain('Extra usage disabled');
     expect(html).not.toContain('Unlimited');
   });
+  test('renders Droid Core separately from Standard with its own windows and model guidance', () => {
+    const quota = normalizeFactoryQuota({ groups: [
+      { displayName: 'Standard', buckets: [
+        { window: '5h', remainingFraction: 0 },
+        { window: 'weekly', remainingFraction: 0.25 },
+        { window: 'monthly', remainingFraction: 0.5 },
+      ] },
+      { displayName: 'Core', buckets: [
+        { window: '5h', remainingFraction: 1 },
+        { window: 'weekly', remainingFraction: 0.8 },
+        { window: 'monthly', remainingFraction: 0.6 },
+      ] },
+    ] });
+    const html = renderToStaticMarkup(createElement(FactoryQuotaBody, {
+      quota, classes: bindQuotaClasses(Object.fromEntries(QUOTA_CLASS_KEYS.map(key => [key, key])), 'test'),
+      styles: { groups: 'groups', group: 'group', window: 'window', row: 'row', note: 'note' },
+    }));
+    expect(html).toContain('<h3>Droid Core</h3>');
+    const [standard, core] = html.split('<h3>Droid Core</h3>');
+    for (const percent of [0, 25, 50]) expect(standard).toContain(`${percent}% remaining`);
+    for (const percent of [100, 80, 60]) expect(core).toContain(`${percent}% remaining`);
+    expect(standard).not.toContain('100% remaining');
+    expect(core).not.toContain('25% remaining');
+    expect(core).toContain('DeepSeek V4.1 Flash');
+    expect(core).toContain('GLM-5.3-Flash');
+    expect(core).toContain('separate from Standard');
+  });
 });

@@ -38,6 +38,21 @@ test('CPA quota preserves unknown windows/resets, zero balance and real exhauste
   assert.throws(() => toCPAQuota({ billingLimits: { status: 'unavailable' } }));
 });
 
+test('Exhausting Standard does not consume the independent Droid Core windows', () => {
+  const groups = {};
+  for (const tier of ['standard', 'core']) {
+    groups[tier] = Object.fromEntries(['fiveHour', 'weekly', 'monthly'].map(window =>
+      [window, { remainingFraction: tier === 'core' ? 1 : 0, resetAt: null }]));
+  }
+  const quota = toCPAQuota({ billingLimits: { status: 'available', groups } });
+  assert.deepEqual(quota.groups, [
+    { displayName: 'Standard', buckets: ['5h', 'weekly', 'monthly'].map(window =>
+      ({ window, remainingFraction: 0 })) },
+    { displayName: 'Core', buckets: ['5h', 'weekly', 'monthly'].map(window =>
+      ({ window, remainingFraction: 1 })) },
+  ]);
+});
+
 test('Failed or malformed billing queries do not become zero quota or a cached success', async () => {
   const config = { name: 'factory', base_url: 'https://api.factory.ai', auth: { type: 'keyfile', file: 'fixture' },
     quota: { billingLimits: true, globalLimit: false, userLimits: false, personalUsage: false } };
