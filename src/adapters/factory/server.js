@@ -11,6 +11,7 @@ const { transformFactoryInstructions } = require('./instructions');
 const { createCPAQuotaReader } = require('./quota');
 const { optimizeAttachments, attachmentPolicy } = require('./attachments');
 const ORIGIN = 'https://api.factory.ai';
+const BINDING_BETA = 'thinking-binding-controls-2026-08-01';
 const ROUTES = {
   '/v1/responses': { protocol: 'responses', path: '/api/llm/o/v1/responses' },
   '/v1/messages': { protocol: 'messages', path: '/api/llm/a/v1/messages' },
@@ -32,12 +33,34 @@ function validateGateway(config) {
   for (const model of g.models) {
     if (!model || typeof model.id !== 'string' || !/^[A-Za-z0-9_.-]+$/.test(model.id) ||
         ids.has(model.id) || !['responses', 'messages', 'chat'].includes(model.protocol) ||
-        typeof model.provider !== 'string' || !/^[a-z][a-z0-9-]*$/.test(model.provider)) {
+        typeof model.provider !== 'string' || !/^[a-z][a-z0-9_-]*$/.test(model.provider)) {
       throw new Error('invalid Factory proxy model');
+    }
+    if (model.anthropic_betas !== undefined &&
+        (model.protocol !== 'messages' || !Array.isArray(model.anthropic_betas) ||
+         model.anthropic_betas.some(beta => typeof beta !== 'string' || !/^[a-z0-9][a-z0-9-]*$/.test(beta)) ||
+         new Set(model.anthropic_betas).size !== model.anthropic_betas.length)) {
+      throw new Error('invalid Factory proxy model beta configuration');
     }
     ids.add(model.id);
   }
   return g;
+}
+
+// Factory capabilities vary by upstream/account: configuration, not a model name
+// or an untrusted caller header, opts into a beta. Never retry to probe support.
+function applyMessageCapabilities(body, model, callerBeta) {
+  const allowed = new Set(model.anthropic_betas ?? []);
+  const hasBinding = body.thinking && typeof body.thinking === 'object' &&
+    Object.hasOwn(body.thinking, 'block_binding');
+  if (hasBinding && !allowed.has(BINDING_BETA)) {
+    const { block_binding, ...thinking } = body.thinking;
+    body = { ...body, thinking };
+  }
+  const betas = new Set((callerBeta ?? '').split(',').map(beta => beta.trim())
+    .filter(beta => allowed.has(beta) && (beta !== BINDING_BETA || hasBinding)));
+  if (hasBinding && allowed.has(BINDING_BETA)) betas.add(BINDING_BETA);
+  return { body, headers: betas.size ? { 'anthropic-beta': [...betas].join(',') } : {} };
 }
 
 async function createFactoryServer(config, key, options = {}) {
@@ -114,6 +137,12 @@ async function createFactoryServer(config, key, options = {}) {
       }
       const optimized = await optimizeAttachments(transformed, gateway.attachment_optimization, { signal });
       transformed = optimized.body;
+      let capabilityHeaders = {};
+      if (route.protocol === 'messages') {
+        const compatible = applyMessageCapabilities(transformed, model, req.headers['anthropic-beta']);
+        transformed = compatible.body;
+        capabilityHeaders = compatible.headers;
+      }
       if (optimized.stats.images || optimized.stats.preservedAttachments) {
         // Counts and byte sizes only: never log attachment content or account identifiers.
         console.log('Factory attachments', JSON.stringify(optimized.stats));
@@ -127,6 +156,7 @@ async function createFactoryServer(config, key, options = {}) {
           'X-Factory-Org-Id': who.orgId, 'x-api-provider': model.provider,
           'x-session-id': crypto.randomUUID(), 'x-assistant-message-id': crypto.randomUUID(),
           ...(route.protocol === 'messages' ? { 'anthropic-version': '2023-06-01' } : {}),
+          ...capabilityHeaders,
         },
         body: JSON.stringify(transformed),
       });

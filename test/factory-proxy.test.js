@@ -30,14 +30,103 @@ const config = () => ({
     { id: 'glm-5.3', protocol: 'chat', provider: 'fireworks' },
   ] },
 });
-async function start(t, fetchImpl) {
-  const server = await createFactoryServer(config(), 'fixture-private', { fetch: fetchImpl });
+async function start(t, fetchImpl, configuration = config()) {
+  const server = await createFactoryServer(configuration, 'fixture-private', { fetch: fetchImpl });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(() => { server.closeAllConnections(); server.close(); });
   return `http://127.0.0.1:${server.address().port}`;
 }
 const auth = { Authorization: 'Bearer fixture-private', 'Content-Type': 'application/json' };
+const bindingBeta = 'thinking-binding-controls-2026-08-01';
+
+test('Factory beta capabilities are explicit messages-model configuration, validated before network access', async () => {
+  for (const value of [null, 'one-beta', ['bad\nheader'], [''], ['same', 'same'], [7]]) {
+    const c = config();
+    c.gateway.models[1].anthropic_betas = value;
+    let calls = 0;
+    await assert.rejects(createFactoryServer(c, 'fixture-private', {
+      fetch: async () => { calls++; },
+    }), /configuration|model|beta/);
+    assert.equal(calls, 0);
+  }
+  const c = config();
+  c.gateway.models[0].anthropic_betas = [bindingBeta];
+  assert.throws(() => validateGateway(c));
+  delete c.gateway.models[0].anthropic_betas;
+  c.gateway.models[1].provider = 'azure_anthropic';
+  c.gateway.models[1].anthropic_betas = [bindingBeta];
+  assert.doesNotThrow(() => validateGateway(c));
+});
+
+test('Factory messages pair opt-in binding with beta and preserve signed tool replay across account instances', async t => {
+  for (const enabled of [false, true]) {
+    const c = config();
+    c.gateway.models[1].anthropic_betas = enabled ? [bindingBeta, 'tool-example-2026-01-01'] : [];
+    // A different model on the same instance must not inherit the capability.
+    c.gateway.models.push({ id: 'claude-other', protocol: 'messages', provider: 'anthropic' });
+    const calls = [];
+    const sse = 'event: message_stop\ndata: {"type":"message_stop"}\n\n';
+    const url = await start(t, async (url, options) => {
+      if (url.endsWith('/whoami')) return new Response('{"orgId":"fixture-org"}');
+      calls.push(options);
+      const body = JSON.parse(options.body);
+      return body.stream
+        ? new Response(sse, { headers: { 'content-type': 'text/event-stream' } })
+        : new Response('{"type":"message","content":[]}');
+    }, c);
+    for (const stream of [false, true]) {
+      for (const model of ['claude-haiku-4-5-20251001', 'claude-other']) {
+        const body = {
+          model, stream, max_tokens: 1024,
+          thinking: { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } },
+          messages: [
+            { role: 'user', content: 'Use the tool' },
+            { role: 'assistant', content: [
+              { type: 'thinking', thinking: 'synthetic fixture', signature: 'synthetic-signature' },
+              { type: 'tool_use', id: 'call_fixture', name: 'read_file', input: { path: 'fixture' } },
+            ] },
+            { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'call_fixture', content: 'ok' }] },
+          ],
+          tools: [{ name: 'read_file', input_schema: { type: 'object' } }],
+        };
+        const response = await fetch(`${url}/v1/messages?beta=true`, {
+          method: 'POST',
+          headers: { ...auth, 'Anthropic-Beta': `untrusted-beta, ${bindingBeta}, tool-example-2026-01-01, ${bindingBeta}` },
+          body: JSON.stringify(body),
+        });
+        assert.equal(response.status, 200);
+        assert.equal(await response.text(), stream ? sse : '{"type":"message","content":[]}');
+        const call = calls.at(-1);
+        const sent = JSON.parse(call.body);
+        const capable = enabled && model !== 'claude-other';
+        assert.deepEqual(sent.thinking, capable ? body.thinking : { type: 'adaptive' });
+        assert.equal(call.headers['anthropic-beta'],
+          capable ? `${bindingBeta},tool-example-2026-01-01` : undefined);
+        assert.deepEqual(sent.messages, body.messages);
+        assert.deepEqual(sent.tools, body.tools);
+      }
+    }
+    // Body-derived beta does not depend on a caller header; do not inject binding itself.
+    for (const thinking of [
+      { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } },
+      { type: 'adaptive' },
+    ]) {
+      const response = await fetch(`${url}/v1/messages`, {
+        method: 'POST', headers: auth, body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001', messages: [{ role: 'user', content: 'hello' }], thinking,
+        }),
+      });
+      assert.equal(response.status, 200);
+      await response.text();
+      assert.equal(calls.at(-1).headers['anthropic-beta'],
+        enabled && thinking.block_binding ? bindingBeta : undefined);
+      assert.equal(JSON.parse(calls.at(-1).body).thinking.block_binding !== undefined,
+        Boolean(enabled && thinking.block_binding));
+    }
+    assert.equal(calls.length, 6, 'one upstream call per request; no retry or fallback');
+  }
+});
 
 test('Factory catalog expansion preserves credential/quota configuration and rejects invalid models', () => {
   const original = config();
@@ -98,13 +187,16 @@ test('Factory proxy routes native protocols, preserves SSE bytes/tools, and isol
   ]) {
     const body = { model, [field]: [{ role: 'user', content: 'hello' }], tools: [{ name: 'read_file' }], stream: true };
     const r = await fetch(`${url}/v1/${protocol}`, { method: 'POST',
-      headers: { ...auth, 'X-Factory-Org-Id': 'hostile-org', Cookie: 'private-cookie' }, body: JSON.stringify(body) });
+      headers: { ...auth, 'X-Factory-Org-Id': 'hostile-org', Cookie: 'private-cookie',
+        'Anthropic-Beta': bindingBeta, 'x-api-provider': 'azure_anthropic' }, body: JSON.stringify(body) });
     assert.equal(r.status, 200);
     assert.equal(await r.text(), sse);
     const call = calls.at(-1);
     assert.equal(new URL(call.url).origin, 'https://api.factory.ai');
     assert.equal(call.options.headers['X-Factory-Org-Id'], 'fixture-org');
     assert.equal(call.options.headers.Cookie, undefined);
+    assert.equal(call.options.headers['anthropic-beta'], undefined);
+    assert.equal(call.options.headers['x-api-provider'], config().gateway.models.find(m => m.id === model).provider);
     assert.equal(call.options.headers['User-Agent'], 'metabridge-factory/0.2');
     assert.equal(call.options.headers['X-Client-Version'], '0.162.1');
     assert.deepEqual(JSON.parse(call.options.body).tools, body.tools);

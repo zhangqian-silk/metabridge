@@ -109,6 +109,51 @@ CPA 负责协议转换，适配层只接收配置允许的原生模型/协议组
 附件优化见 [Factory attachment transport](factory-attachments.md)。
 凭据更换后需要重启对应代理，并重新生成该账号的 CPA 配置。
 
+### Anthropic beta 与 thinking binding
+
+Factory 的 Messages 兼容性取决于具体上游及账号，不能由模型名称推断。
+每个 `gateway.models` 条目可显式配置 `anthropic_betas` 字符串数组，
+仅适用于 `protocol: "messages"`。缺省为空白名单；数组元素须为小写
+字母、数字、连字符组成的非空 beta 标识，且不能重复。
+这是部署者声明的能力边界，不是自动探测结果。
+
+例如，只有在已确认该账号、模型和上游支持后，才可在其私有条目中设置：
+
+```json
+{
+  "id": "your-verified-model",
+  "protocol": "messages",
+  "provider": "your_verified_upstream",
+  "anthropic_betas": ["thinking-binding-controls-2026-08-01"]
+}
+```
+
+代理在最终上传边界执行以下规则：
+
+- 仅转发调用方 `Anthropic-Beta` 中命中该模型白名单的标识，去重后发送；
+  不透传其余客户端头，不自动转发整组 CPA beta。
+- 默认移除 `thinking.block_binding`，保留其他 thinking 字段、签名思考块、
+  `tool_use` / `tool_result` 及关联 ID。这会失去 prefix mismatch 的
+  `drop_block` 容错，不保证所有签名回放都能成功。
+- 显式允许 binding beta 后，保留已有 `block_binding` 并补齐对应 beta，
+  即使调用方漏发该 header；没有 binding 字段时不注入字段或该 beta。
+  其他白名单 beta 仍仅在调用方请求时发送。
+- 策略只影响 Messages，不更改 Responses/Chat 请求、不切换上游、不重试，
+  不自动更改候选目录或生产配置。下划线形式的上游名称可显式配置，
+  但语法合法不代表 Factory 支持。
+
+可用本地隔离回归检查代理行为：
+
+```bash
+node --test test/factory-proxy.test.js
+```
+
+测试使用虚拟凭据和替代上游，不证明 Factory 真实接口能力。
+若 CPA 的 `payload.filter` 已提前移除 binding，代理不会重建它；
+调整此过滤规则或部署新适配器需要独立评估与授权。
+`configure-factory-models.js --activate` 会替换整个模型列表，因此也会替换
+条目中的自定义能力配置；使用前应核对，备份中保留原配置。
+
 ### 多账号与模型过滤
 
 每个账号使用独立私有配置、key 文件、loopback 端口和服务实例。
