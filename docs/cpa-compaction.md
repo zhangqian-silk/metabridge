@@ -46,6 +46,11 @@ No legacy sanitization, tool renaming or reasoning transformations are enabled.
 Global `compactionStripImages` retains its legacy behavior; this per-model
 policy uses its own `stripImages` setting.
 
+Transient failures are handled by CPA's own credential retry/cooldown policy,
+not a second bridge retry loop. See [Factory retry configuration](factory-api.md#重试由-cpa-负责).
+An explicit provider `request-retry: 0` disables additional rounds even when
+global retries are enabled. Failed summaries still produce no checkpoint.
+
 After changing the provider file, restart `metabridge.service`.
 Rollback by removing this policy and restarting. Threads already containing
 `mb-cmp1` checkpoints still require this replay adapter, or a new conversation;

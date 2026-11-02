@@ -175,6 +175,38 @@ node scripts/configure-factory-cpa.js --activate --account factory-example
 不把某台机器的路由选择或 TTL 写入仓库默认值。
 额度页仅查询展示，不按剩余额度参与调度。
 
+### 重试由 CPA 负责
+
+metabridge 不在压缩请求外层增加重试；账号切换、追加重试轮次和冷却等待
+统一使用 CPA 自身机制。配置生成器和示例不再强制设置 `request-retry: 0`：
+新 provider 继承 CPA 的重试策略，重新生成同名 provider 时保留其显式
+`request-retry`（包括关闭追加轮次的 `0` 和继承全局的负值）。
+生成器不会修改全局重试或等待上限。
+
+在 CPA v8 中，`routing.retry.request-retry` 表示首轮之外的追加轮次，
+`routing.retry.max-retry-interval` 表示每次追加轮次前允许的最大冷却等待秒数，
+不是整个请求的超时。provider 的显式 `request-retry` 可以覆盖全局轮次；
+`0` 不禁止同轮切换账号，但不允许追加轮次。
+等待上限非正数时不等待正值冷却，轮次配置本身不足以恢复冷却中的账号。
+
+例如，需要允许两轮额外重试、每次最多等待 60 秒冷却时，可在私有 CPA
+配置中按需合并以下字段（不要用片段覆盖整个配置）：
+
+```json
+{
+  "routing": {
+    "retry": { "request-retry": 2, "max-retry-interval": 60 }
+  }
+}
+```
+
+这是显式部署策略示例，不是仓库默认值；全局设置会影响其他继承它的 provider。
+旧生成器留下的 provider 级 `request-retry: 0` 仍会覆盖全局设置，
+需要显式删除以继承，或改为所需轮次；重新运行生成器不会迁移已有 `0`。
+凭据级覆盖也应一并核对。CPA 版本不同应以对应版本的配置语义为准。
+追加轮次可能包含多个账号尝试，不能把“轮次数”当作请求总次数或费用上限。
+持续故障、额度耗尽和超出等待上限仍可能失败；压缩失败时不得生成不完整 checkpoint。
+
 metabridge 的 CPA provider 可用 `modelFilter.allow/deny` 控制对外模型目录和请求准入。
 这是部署策略，应只编辑私有 `~/.metabridge/providers/cpa.json`，
 不修改仓库模型元数据或共享模板来反映本机筛选结果。

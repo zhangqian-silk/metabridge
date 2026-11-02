@@ -30,6 +30,35 @@ const config = () => ({
     { id: 'glm-5.3', protocol: 'chat', provider: 'fireworks' },
   ] },
 });
+
+test('Factory CPA generation inherits retry policy without disabling CPA recovery', () => {
+  const original = { routing: { retry: { 'request-retry': 2, 'max-retry-interval': 60 } } };
+  const merged = mergeFactoryProviders(original, config(), 'fixture-private');
+  assert.deepEqual(merged.routing, original.routing);
+  for (const provider of Object.values(merged['api-keys']).flat()) {
+    assert.equal(Object.hasOwn(provider, 'request-retry'), false);
+  }
+  assert.equal(original['api-keys'], undefined);
+  assert.deepEqual(mergeFactoryProviders(merged, config(), 'fixture-private'), merged);
+});
+
+test('Factory CPA regeneration preserves explicit retry overrides including opt-out and inheritance', () => {
+  for (const retry of [0, 2, -1]) {
+    const original = mergeFactoryProviders({}, config(), 'fixture-private');
+    for (const provider of Object.values(original['api-keys']).flat()) {
+      provider['request-retry'] = retry;
+    }
+    const before = structuredClone(original);
+    const merged = mergeFactoryProviders(original, config(), 'rotated-private');
+    for (const provider of Object.values(merged['api-keys']).flat()) {
+      assert.equal(provider['request-retry'], retry);
+      assert.equal(provider.keys[0]['api-key'], 'rotated-private');
+    }
+    assert.deepEqual(original, before);
+    assert.deepEqual(mergeFactoryProviders(merged, config(), 'rotated-private'), merged);
+  }
+});
+
 async function start(t, fetchImpl, configuration = config()) {
   const server = await createFactoryServer(configuration, 'fixture-private', { fetch: fetchImpl });
   server.listen(0, '127.0.0.1');

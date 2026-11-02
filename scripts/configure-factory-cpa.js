@@ -19,8 +19,13 @@ function mergeFactoryProviders(cpa, factory, key, account = 'factory') {
     const original = result['api-keys'][group] ?? [];
     const models = gateway.models.filter(model => model.protocol === protocol);
     if (!Array.isArray(original)) throw new Error('invalid CPA provider group');
+    const previous = original.find(item => item.name === name);
     const provider = {
-      name, prefix: 'factory', 'base-url': protocol === 'messages' ? base.slice(0, -3) : base, 'request-retry': 0,
+      name, prefix: 'factory', 'base-url': protocol === 'messages' ? base.slice(0, -3) : base,
+      // CPA owns retries. New entries inherit its policy; regeneration must
+      // preserve explicit overrides, including a deliberate zero (opt-out).
+      ...(previous && Object.hasOwn(previous, 'request-retry')
+        ? { 'request-retry': previous['request-retry'] } : {}),
       headers: protocol === 'messages' ? { Authorization: `Bearer ${key}` } : {},
       keys: [{ 'api-key': key, ...(protocol === 'responses'
         ? { 'disable-codex-cloaking': true, websockets: false }

@@ -150,7 +150,7 @@ test('Factory CPA template keeps native protocols, prevents cloaking and separat
   assert.equal(providers.claude[0].headers.Authorization, 'Bearer REPLACE_WITH_FACTORY_KEY');
   for (const provider of Object.values(providers).flat()) {
     assert.equal(provider.prefix, 'factory');
-    assert.equal(provider['request-retry'], 0);
+    assert.equal(Object.hasOwn(provider, 'request-retry'), false);
     assert.equal(new URL(provider['base-url']).origin, 'http://127.0.0.1:8319');
     assert.equal(provider.headers['X-Factory-Client'], undefined);
     assert.ok(provider.models.every(m => m['display-name'].startsWith('factory · ')));
